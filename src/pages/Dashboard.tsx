@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+
+function getStatusClasses(status: string) {
+  if (status === "Pending") return "bg-amber-100 text-amber-700";
+  if (status === "Confirmed") return "bg-sky-100 text-sky-700";
+  if (status === "Packed") return "bg-violet-100 text-violet-700";
+  if (status === "Shipped") return "bg-indigo-100 text-indigo-700";
+  if (status === "Delivered") return "bg-emerald-100 text-emerald-700";
+  if (status === "Returned") return "bg-rose-100 text-rose-700";
+  return "bg-slate-100 text-slate-700";
+}
 
 export default function Dashboard() {
   const [data, setData] = useState<{
@@ -99,28 +108,15 @@ export default function Dashboard() {
                       <div className="text-xs text-slate-500">{order.customerPhone}</div>
                     </td>
                     <td className="p-4">
-                      {order.status === "Placed" && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-orange-100 text-orange-700 uppercase tracking-wide">
-                          Placed
-                        </span>
-                      )}
-                      {order.status === "Delivered" && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">
-                          Delivered
-                        </span>
-                      )}
-                      {order.status === "Paid" && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Paid
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide ${getStatusClasses(order.status)}`}>
+                        {order.status}
+                      </span>
                     </td>
                     <td className="p-4">
                       <span className="font-bold text-teal-700">৳ {order.profit}</span>
                     </td>
                     <td className="p-4">
-                       <span className="text-xs text-slate-400 italic">Managed by Admin</span>
+                       <span className="text-xs text-slate-400 italic">Managed by Supplier</span>
                     </td>
                   </tr>
                 ))}

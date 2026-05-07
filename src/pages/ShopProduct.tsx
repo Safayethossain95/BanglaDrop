@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { type FormEvent, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Truck, Package, ShieldCheck } from "lucide-react";
+import logoImage from "../assets/images/logo.png";
+import { useProductsStore } from "../store/productsStore";
 
 export default function ShopProduct() {
   const { productId } = useParams();
-  const navigate = useNavigate();
-  const [product, setProduct] = useState<any>(null);
-  
+  const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const product = useProductsStore((state) => (productId ? state.getProductById(productId) : undefined));
   const [form, setForm] = useState({
     customerName: "",
     customerPhone: "",
@@ -18,17 +19,7 @@ export default function ShopProduct() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/products/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) setError(data.error);
-        else setProduct(data);
-        setLoading(false);
-      });
-  }, [productId]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
@@ -39,6 +30,7 @@ export default function ShopProduct() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
+          productSnapshot: product,
           sellPrice: product.suggestedRetailPrice,
           ...form
         })
@@ -54,7 +46,7 @@ export default function ShopProduct() {
     }
   };
 
-  if (loading) {
+  if (!hasHydrated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
@@ -62,8 +54,8 @@ export default function ShopProduct() {
     );
   }
 
-  if (error && !product) {
-    return <div className="min-h-screen bg-slate-50 text-red-500 font-medium p-8 text-center">{error}</div>;
+  if (!product) {
+    return <div className="min-h-screen bg-slate-50 text-red-500 font-medium p-8 text-center">Product not found.</div>;
   }
 
   if (success) {
@@ -75,7 +67,7 @@ export default function ShopProduct() {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Order Confirmed!</h2>
           <p className="text-slate-500 mb-8">Thank you for your purchase. We will deliver it via Cash on Delivery soon.</p>
-          <Link to="/shop" className="block w-full bg-slate-900 text-white font-medium py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-sm">
+          <Link to="/" className="block w-full bg-slate-900 text-white font-medium py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-sm">
             Continue Shopping
           </Link>
         </div>
@@ -88,13 +80,13 @@ export default function ShopProduct() {
       <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/shop" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium">
+            <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium">
               <ArrowLeft className="w-5 h-5" />
               Back to Store
             </Link>
             <div className="flex items-center gap-2 font-bold text-lg text-slate-900">
-              <span className="w-6 h-6 bg-slate-900 text-white flex items-center justify-center rounded text-sm">E</span>
-              EcoStore
+              <img src={logoImage} alt="BanglaDrop logo" className="w-6 h-6 rounded object-cover" />
+              BanglaDrop
             </div>
             {/* Empty div for flex balance */}
             <div className="w-24"></div>

@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import { PackageCheck } from "lucide-react";
+
+const supplierStatuses = ["Pending", "Confirmed", "Packed", "Shipped", "Delivered", "Returned", "Paid"] as const;
 
 function getStatusClasses(status: string) {
-  if (status === "Pending") return "bg-amber-100 text-amber-700";
-  if (status === "Confirmed") return "bg-sky-100 text-sky-700";
-  if (status === "Packed") return "bg-violet-100 text-violet-700";
-  if (status === "Shipped") return "bg-indigo-100 text-indigo-700";
-  if (status === "Delivered") return "bg-emerald-100 text-emerald-700";
-  if (status === "Returned") return "bg-rose-100 text-rose-700";
-  return "bg-slate-100 text-slate-700";
+  if (status === "Pending") return "bg-amber-50 border-amber-200 text-amber-700 focus:border-amber-500";
+  if (status === "Confirmed") return "bg-sky-50 border-sky-200 text-sky-700 focus:border-sky-500";
+  if (status === "Packed") return "bg-violet-50 border-violet-200 text-violet-700 focus:border-violet-500";
+  if (status === "Shipped") return "bg-indigo-50 border-indigo-200 text-indigo-700 focus:border-indigo-500";
+  if (status === "Delivered") return "bg-emerald-50 border-emerald-200 text-emerald-700 focus:border-emerald-500";
+  if (status === "Returned") return "bg-rose-50 border-rose-200 text-rose-700 focus:border-rose-500";
+  if (status === "Paid") return "bg-lime-50 border-lime-200 text-lime-700 focus:border-lime-500";
+  return "bg-slate-50 border-slate-200 text-slate-700 focus:border-slate-500";
 }
 
-export default function Admin() {
+export default function Supplier() {
   const [data, setData] = useState<{
     orders: any[];
   } | null>(null);
-
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboard = () => {
-    fetch("/api/dashboard") // Using the same endpoint since it returns orders
+  const fetchOrders = () => {
+    fetch("/api/dashboard")
       .then((res) => res.json())
       .then((json) => {
         setData(json);
@@ -28,8 +30,20 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    fetchDashboard();
+    fetchOrders();
   }, []);
+
+  const updateStatus = (id: string, newStatus: string) => {
+    fetch(`/api/orders/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        fetchOrders();
+      });
+  };
 
   if (loading || !data) {
     return (
@@ -43,20 +57,20 @@ export default function Admin() {
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 text-teal-600" />
-          Order Oversight
+          <PackageCheck className="w-8 h-8 text-teal-600" />
+          Supplier Orders
         </h1>
-        <p className="text-slate-500 mt-2">Review all platform orders and monitor fulfillment progress across the catalog.</p>
+        <p className="text-slate-500 mt-2">Manage order fulfillment and update each shipment through the delivery pipeline.</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900">All Orders</h2>
+          <h2 className="text-lg font-bold text-slate-900">Order Processing Queue</h2>
         </div>
-        
+
         {data.orders.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
-            No orders have been placed on the platform yet.
+            No orders are waiting in the supplier queue yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -67,7 +81,7 @@ export default function Admin() {
                   <th className="p-4 font-medium">Product & Customer</th>
                   <th className="p-4 font-medium">Address</th>
                   <th className="p-4 font-medium">Pricing</th>
-                  <th className="p-4 font-medium">Status</th>
+                  <th className="p-4 font-medium">Update Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -79,18 +93,24 @@ export default function Admin() {
                       <div className="text-slate-700">{order.customerName}</div>
                       <div className="text-xs text-slate-500">{order.customerPhone}</div>
                     </td>
-                    <td className="p-4 text-slate-600 align-top max-w-[200px] truncate">
-                      {order.address}
-                    </td>
+                    <td className="p-4 text-slate-600 align-top max-w-[220px] truncate">{order.address}</td>
                     <td className="p-4 align-top">
                       <div className="text-slate-500 text-xs">Sell: ৳ {order.sellPrice}</div>
                       <div className="text-slate-500 text-xs">Cost: ৳ {order.supplierPrice}</div>
                       <div className="font-bold text-teal-700 mt-1">Profit: ৳ {order.profit}</div>
                     </td>
                     <td className="p-4 align-top">
-                      <span className={`inline-flex items-center rounded px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${getStatusClasses(order.status)}`}>
-                        {order.status}
-                      </span>
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateStatus(order.id, e.target.value)}
+                        className={`text-xs font-bold uppercase tracking-wide border rounded-md px-3 py-2 outline-none transition-colors ${getStatusClasses(order.status)}`}
+                      >
+                        {supplierStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}

@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { type FormEvent, useEffect, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Truck, PackageCheck } from "lucide-react";
+import { useProductsStore } from "../store/productsStore";
 
 export default function Checkout() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<any>(null);
+  const location = useLocation();
+  const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const product = useProductsStore((state) => (productId ? state.getProductById(productId) : undefined));
+  const returnTo = typeof location.state?.returnTo === "string" ? location.state.returnTo : "/dashboard";
   
   const [form, setForm] = useState({
     customerName: "",
@@ -19,20 +23,19 @@ export default function Checkout() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/products/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setProduct(data);
-          setForm(f => ({ ...f, sellPrice: data.suggestedRetailPrice }));
-        }
-        setLoading(false);
-      });
-  }, [productId]);
+    if (!hasHydrated) return;
+    setLoading(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    if (product) {
+      setForm((current) => (
+        current.sellPrice === 0
+          ? { ...current, sellPrice: product.suggestedRetailPrice }
+          : current
+      ));
+    }
+  }, [hasHydrated, product]);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
@@ -43,6 +46,7 @@ export default function Checkout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
+          productSnapshot: product,
           ...form
         })
       });
@@ -50,14 +54,14 @@ export default function Checkout() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to place order.");
 
-      navigate("/dashboard");
+      navigate(returnTo);
     } catch (err: any) {
       setError(err.message);
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (!hasHydrated || loading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
@@ -65,8 +69,8 @@ export default function Checkout() {
     );
   }
 
-  if (error && !product) {
-    return <div className="text-red-500 font-medium p-8 text-center">{error}</div>;
+  if (!product) {
+    return <div className="text-red-500 font-medium p-8 text-center">Product not found.</div>;
   }
 
   const profit = form.sellPrice - product.supplierPrice;
