@@ -27,14 +27,6 @@ export default function Products() {
     }
   }, [hasHydrated, loadProducts]);
 
-  if (!hasHydrated) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   const categories = ["All", ...new Set(products.map((product) => product.category))];
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const filteredProducts = products.filter((product) => {
@@ -70,6 +62,14 @@ export default function Products() {
         b.suggestedRetailPrice - b.supplierPrice - (a.suggestedRetailPrice - a.supplierPrice),
     )[0];
   }, [filteredProducts]);
+
+  if (!hasHydrated) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.10),_transparent_32%),linear-gradient(180deg,_#f8fafc_0%,_#eef6f4_100%)]">
@@ -171,16 +171,16 @@ export default function Products() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1180px] table-fixed text-left">
-                      <thead className="bg-white text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <table className="w-full min-w-[980px] table-auto text-left">
+                      <thead className="bg-white text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         <tr>
-                          <th className="px-5 py-4">Product</th>
-                          <th className="px-5 py-4">Category</th>
-                          <th className="px-5 py-4">Wholesale</th>
-                          <th className="px-5 py-4">Retail</th>
-                          <th className="px-5 py-4">Margin</th>
-                          <th className="px-5 py-4">Sell State</th>
-                          <th className="px-5 py-4 text-right">Action</th>
+                          <th className="w-[240px] min-w-[240px] px-3 py-3">Product</th>
+                          <th className="px-3 py-3 whitespace-nowrap">Category</th>
+                          <th className="px-3 py-3 whitespace-nowrap">Wholesale</th>
+                          <th className="px-3 py-3 whitespace-nowrap">Retail</th>
+                          <th className="px-3 py-3 whitespace-nowrap">Margin</th>
+                          <th className="px-3 py-3 whitespace-nowrap">Sell State</th>
+                          <th className="px-3 py-3 whitespace-nowrap text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-sm">
@@ -189,8 +189,8 @@ export default function Products() {
 
                           return (
                             <tr key={product.id} className="transition-colors hover:bg-slate-50/80">
-                              <td className="w-[38%] px-5 py-4">
-                                <div className="flex items-center gap-4">
+                              <td className="w-[240px] min-w-[240px] px-3 py-3">
+                                <div className="flex items-center gap-3">
                                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
                                     <img
                                       src={product.image}
@@ -206,28 +206,28 @@ export default function Products() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="w-[12%] px-5 py-4">
+                              <td className="px-3 py-3 whitespace-nowrap">
                                 <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                                   {product.category}
                                 </span>
                               </td>
-                              <td className="w-[10%] px-5 py-4 font-semibold text-slate-700">৳ {product.supplierPrice}</td>
-                              <td className="w-[10%] px-5 py-4 font-semibold text-slate-900">৳ {product.suggestedRetailPrice}</td>
-                              <td className="w-[10%] px-5 py-4">
+                              <td className="px-3 py-3 whitespace-nowrap font-semibold text-slate-700">৳ {product.supplierPrice}</td>
+                              <td className="px-3 py-3 whitespace-nowrap font-semibold text-slate-900">৳ {product.suggestedRetailPrice}</td>
+                              <td className="px-3 py-3 whitespace-nowrap">
                                 <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                                   ৳ {margin}
                                 </span>
                               </td>
-                              <td className="w-[10%] px-5 py-4">
+                              <td className="px-3 py-3 whitespace-nowrap">
                                 <span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
                                   Ready to Sell
                                 </span>
                               </td>
-                              <td className="w-[10%] px-5 py-4 text-right">
+                              <td className="px-3 py-3 whitespace-nowrap text-right">
                                 <Link
                                   to={`/checkout/${product.id}`}
                                   state={checkoutState}
-                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-black"
                                   id={`sell-btn-${product.id}`}
                                 >
                                   <ShoppingCart className="h-4 w-4" />

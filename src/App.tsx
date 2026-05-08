@@ -72,7 +72,7 @@ const supplierMenu: NavigationItem[] = [
 
 const sellerMenu: NavigationItem[] = [
   { path: "/dashboard", name: "Dashboard", icon: Home },
-  { path: "/pos", name: "POS", icon: ShoppingBag },
+  { path: "/admin/pos", name: "POS", icon: ShoppingBag },
 ];
 
 function getMenuItems(pathname: string) {
@@ -632,14 +632,6 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="/pos"
-                    element={
-                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                        <Products />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
                     path="/checkout/:productId"
                     element={
                       <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
@@ -666,7 +658,7 @@ export default function App() {
                   <Route
                     path="/admin/pos"
                     element={
-                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                         <Products />
                       </ProtectedRoute>
                     }

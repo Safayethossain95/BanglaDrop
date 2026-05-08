@@ -58,54 +58,54 @@ export default function AdminProducts() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1140px] text-left">
-              <thead className="bg-[#fcfcfb] text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <table className="w-full min-w-[980px] table-auto text-left">
+              <thead className="bg-[#fcfcfb] text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                 <tr>
-                  <th className="px-5 py-4">Product</th>
-                  <th className="px-5 py-4">Category</th>
-                  <th className="px-5 py-4">Supplier Price</th>
-                  <th className="px-5 py-4">Retail Price</th>
-                  <th className="px-5 py-4">Margin</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4 text-right">Actions</th>
+                  <th className="w-[240px] min-w-[240px] px-3 py-3">Product</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Category</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Supplier Price</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Retail Price</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Margin</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Status</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {products.map((product) => (
                   <tr key={product.id} className="align-top transition-colors hover:bg-slate-50/70">
-                    <td className="px-5 py-4 min-w-[340px]">
-                      <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                    <td className="w-[240px] min-w-[240px] px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
                           <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="font-medium text-slate-900">{product.name}</div>
                           <div className="mt-1 line-clamp-2 text-sm text-slate-500">{product.description}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                         {product.category}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-medium text-slate-900">৳ {product.supplierPrice}</td>
-                    <td className="px-5 py-4 font-medium text-slate-900">৳ {product.suggestedRetailPrice}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-900">৳ {product.supplierPrice}</td>
+                    <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-900">৳ {product.suggestedRetailPrice}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                         ৳ {product.suggestedRetailPrice - product.supplierPrice}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                         Published
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <div className="flex justify-end gap-2">
                         <Link
                           to={`/admin/products/${product.id}/edit`}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                         >
                           <Pencil className="h-4 w-4" />
                           Edit
@@ -113,7 +113,7 @@ export default function AdminProducts() {
                         <button
                           type="button"
                           onClick={() => handleDelete(product.id)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3.5 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete

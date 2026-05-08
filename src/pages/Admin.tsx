@@ -86,11 +86,11 @@ export default function Admin() {
           <div className="p-12 text-center text-slate-500">No orders have been placed on the platform yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-left">
+            <table className="w-full min-w-[920px] text-left">
               <thead className="bg-[#fcfcfb] text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                 <tr>
                   <th className="px-5 py-4">Product</th>
-                  <th className="px-5 py-4">Order ID</th>
+                  <th className="px-5 py-4 v">Order ID</th>
                   <th className="px-5 py-4">Customer</th>
                   <th className="px-5 py-4">Address</th>
                   <th className="px-5 py-4">Sell Price</th>
@@ -105,7 +105,7 @@ export default function Admin() {
                       <div className="font-medium text-slate-900">{order.productName}</div>
                       <div className="mt-1 text-xs text-slate-500">Supplier cost ৳ {order.supplierPrice}</div>
                     </td>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-500">{order.id}</td>
+                    <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-35">{order.id}</td>
                     <td className="px-5 py-4">
                       <div className="font-medium text-slate-900">{order.customerName}</div>
                       <div className="mt-1 text-xs text-slate-500">{order.customerPhone}</div>
