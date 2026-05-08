@@ -1,94 +1,120 @@
-import { useEffect, useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ListFilter, ShieldAlert } from "lucide-react";
+import { apiFetch } from "../lib/api";
 
 function getStatusClasses(status: string) {
-  if (status === "Pending") return "bg-amber-100 text-amber-700";
-  if (status === "Confirmed") return "bg-sky-100 text-sky-700";
-  if (status === "Packed") return "bg-violet-100 text-violet-700";
-  if (status === "Shipped") return "bg-indigo-100 text-indigo-700";
-  if (status === "Delivered") return "bg-emerald-100 text-emerald-700";
-  if (status === "Returned") return "bg-rose-100 text-rose-700";
-  return "bg-slate-100 text-slate-700";
+  if (status === "Pending") return "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100";
+  if (status === "Confirmed") return "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-100";
+  if (status === "Packed") return "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-100";
+  if (status === "Shipped") return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100";
+  if (status === "Delivered") return "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-100";
+  if (status === "Returned") return "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-100";
+  return "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200";
 }
 
 export default function Admin() {
-  const [data, setData] = useState<{
-    orders: any[];
-  } | null>(null);
-
+  const [data, setData] = useState<{ orders: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboard = () => {
-    fetch("/api/dashboard") // Using the same endpoint since it returns orders
-      .then((res) => res.json())
+  useEffect(() => {
+    apiFetch<{ orders: any[] }>("/api/dashboard")
       .then((json) => {
         setData(json);
         setLoading(false);
       });
-  };
-
-  useEffect(() => {
-    fetchDashboard();
   }, []);
 
-  if (loading || !data) {
+  const stats = useMemo(() => {
+    if (!data) return null;
+    return {
+      total: data.orders.length,
+      pending: data.orders.filter((order) => order.status === "Pending").length,
+      delivered: data.orders.filter((order) => order.status === "Delivered").length,
+      returned: data.orders.filter((order) => order.status === "Returned").length,
+    };
+  }, [data]);
+
+  if (loading || !data || !stats) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 text-teal-600" />
-          Order Oversight
-        </h1>
-        <p className="text-slate-500 mt-2">Review all platform orders and monitor fulfillment progress across the catalog.</p>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900">All Orders</h2>
+    <div className="space-y-6">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Total Orders</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{stats.total}</p>
         </div>
-        
-        {data.orders.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
-            No orders have been placed on the platform yet.
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Pending</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{stats.pending}</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Delivered</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{stats.delivered}</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Returned</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{stats.returned}</p>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_18px_45px_-30px_rgba(15,23,42,0.22)]">
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Order oversight
+            </div>
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">All platform orders</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              A cleaner operations table for reviewing customers, delivery status, and margin outcome.
+            </p>
           </div>
+
+          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#fcfcfb] px-4 py-3 text-sm text-slate-500">
+            <ListFilter className="h-4 w-4" />
+            Live feed
+          </div>
+        </div>
+
+        {data.orders.length === 0 ? (
+          <div className="p-12 text-center text-slate-500">No orders have been placed on the platform yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-500 text-sm">
+            <table className="w-full min-w-[1100px] text-left">
+              <thead className="bg-[#fcfcfb] text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                 <tr>
-                  <th className="p-4 font-medium">Order ID</th>
-                  <th className="p-4 font-medium">Product & Customer</th>
-                  <th className="p-4 font-medium">Address</th>
-                  <th className="p-4 font-medium">Pricing</th>
-                  <th className="p-4 font-medium">Status</th>
+                  <th className="px-5 py-4">Product</th>
+                  <th className="px-5 py-4">Order ID</th>
+                  <th className="px-5 py-4">Customer</th>
+                  <th className="px-5 py-4">Address</th>
+                  <th className="px-5 py-4">Sell Price</th>
+                  <th className="px-5 py-4">Profit</th>
+                  <th className="px-5 py-4">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {data.orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-mono text-slate-600 align-top">{order.id}</td>
-                    <td className="p-4 align-top">
-                      <div className="font-medium text-slate-900 mb-1">{order.productName}</div>
-                      <div className="text-slate-700">{order.customerName}</div>
-                      <div className="text-xs text-slate-500">{order.customerPhone}</div>
+                  <tr key={order.id} className="transition-colors hover:bg-slate-50/70">
+                    <td className="px-5 py-4">
+                      <div className="font-medium text-slate-900">{order.productName}</div>
+                      <div className="mt-1 text-xs text-slate-500">Supplier cost ৳ {order.supplierPrice}</div>
                     </td>
-                    <td className="p-4 text-slate-600 align-top max-w-[200px] truncate">
-                      {order.address}
+                    <td className="px-5 py-4 font-mono text-xs text-slate-500">{order.id}</td>
+                    <td className="px-5 py-4">
+                      <div className="font-medium text-slate-900">{order.customerName}</div>
+                      <div className="mt-1 text-xs text-slate-500">{order.customerPhone}</div>
                     </td>
-                    <td className="p-4 align-top">
-                      <div className="text-slate-500 text-xs">Sell: ৳ {order.sellPrice}</div>
-                      <div className="text-slate-500 text-xs">Cost: ৳ {order.supplierPrice}</div>
-                      <div className="font-bold text-teal-700 mt-1">Profit: ৳ {order.profit}</div>
-                    </td>
-                    <td className="p-4 align-top">
-                      <span className={`inline-flex items-center rounded px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${getStatusClasses(order.status)}`}>
+                    <td className="px-5 py-4 max-w-[260px] text-slate-500">{order.address}</td>
+                    <td className="px-5 py-4 font-medium text-slate-900">৳ {order.sellPrice}</td>
+                    <td className="px-5 py-4 font-semibold text-emerald-700">৳ {order.profit}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(order.status)}`}>
                         {order.status}
                       </span>
                     </td>
@@ -98,7 +124,7 @@ export default function Admin() {
             </table>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Truck, Package, ShieldCheck } from "lucide-react";
 import logoImage from "../assets/images/logo.png";
@@ -7,6 +7,7 @@ import { useProductsStore } from "../store/productsStore";
 export default function ShopProduct() {
   const { productId } = useParams();
   const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const loadProducts = useProductsStore((state) => state.loadProducts);
   const product = useProductsStore((state) => (productId ? state.getProductById(productId) : undefined));
   const [form, setForm] = useState({
     customerName: "",
@@ -18,6 +19,12 @@ export default function ShopProduct() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      loadProducts().catch(() => undefined);
+    }
+  }, [hasHydrated, loadProducts]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

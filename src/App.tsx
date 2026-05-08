@@ -3,17 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
-  Package,
+  Bell,
+  Home,
   LayoutDashboard,
-  Store,
   LogOut,
   Menu,
+  Package,
   PackageCheck,
+  Search,
+  Settings,
   ShieldAlert,
+  ShoppingBag,
+  Store,
   Wallet,
   X,
 } from "lucide-react";
@@ -24,6 +29,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Dashboard from "./pages/Dashboard";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import AdminProductForm from "./pages/AdminProductForm";
 import AdminProducts from "./pages/AdminProducts";
@@ -31,6 +37,8 @@ import Supplier from "./pages/Supplier";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import Shop from "./pages/Shop";
 import ShopProduct from "./pages/ShopProduct";
+import { apiFetch } from "./lib/api";
+import { clearStoredAuth, getDefaultRouteForRole, getStoredUser, type UserRole } from "./lib/auth";
 
 type WalletSummary = {
   available: number;
@@ -44,179 +52,289 @@ type WalletModalProps = {
   walletSummary: WalletSummary;
 };
 
-function Sidebar({ onOpenWallet }: { onOpenWallet: () => void }) {
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  const isSupplierRoute = location.pathname.startsWith("/supplier");
-  const menuItems = isAdminRoute
-    ? [
-        { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard },
-        { path: "/admin/pos", name: "POS", icon: Store },
-        { path: "/admin", name: "Orders", icon: ShieldAlert },
-        { path: "/admin/products", name: "Products", icon: Package },
-      ]
-    : isSupplierRoute
-      ? [
-          { path: "/supplier/dashboard", name: "Dashboard", icon: LayoutDashboard },
-          { path: "/supplier", name: "Orders", icon: PackageCheck },
-        ]
-    : [
-        { path: "/pos", name: "POS", icon: Store },
-        { path: "/dashboard", name: "Dashboard", icon: LayoutDashboard },
-      ];
+type NavigationItem = {
+  path: string;
+  name: string;
+  icon: typeof LayoutDashboard;
+};
+
+const adminMenu: NavigationItem[] = [
+  { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard },
+  { path: "/admin", name: "Orders", icon: ShieldAlert },
+  { path: "/admin/products", name: "Products", icon: Package },
+  { path: "/admin/pos", name: "POS", icon: Store },
+];
+
+const supplierMenu: NavigationItem[] = [
+  { path: "/supplier/dashboard", name: "Dashboard", icon: LayoutDashboard },
+  { path: "/supplier", name: "Orders", icon: PackageCheck },
+];
+
+const sellerMenu: NavigationItem[] = [
+  { path: "/dashboard", name: "Dashboard", icon: Home },
+  { path: "/pos", name: "POS", icon: ShoppingBag },
+];
+
+function getMenuItems(pathname: string) {
+  if (pathname.startsWith("/admin")) return adminMenu;
+  if (pathname.startsWith("/supplier")) return supplierMenu;
+  return sellerMenu;
+}
+
+function getShellMeta(pathname: string) {
+  if (pathname.startsWith("/admin/dashboard")) {
+    return { title: "Admin dashboard", subtitle: "Monitor orders, profit, and platform health." };
+  }
+  if (pathname.startsWith("/admin/products")) {
+    return { title: "Product catalog", subtitle: "Manage pricing, listings, and sell-ready inventory." };
+  }
+  if (pathname.startsWith("/admin/pos")) {
+    return { title: "POS workspace", subtitle: "Search products fast and move directly into checkout." };
+  }
+  if (pathname === "/admin") {
+    return { title: "Order operations", subtitle: "Track every order from intake to delivery outcome." };
+  }
+  if (pathname.startsWith("/supplier/dashboard")) {
+    return { title: "Supplier dashboard", subtitle: "Keep fulfillment moving and watch payout readiness." };
+  }
+  if (pathname.startsWith("/supplier")) {
+    return { title: "Supplier orders", subtitle: "Update order status and clear the processing queue." };
+  }
+  if (pathname.startsWith("/dashboard")) {
+    return { title: "Seller dashboard", subtitle: "Follow COD orders and the profit you have unlocked." };
+  }
+  if (pathname.startsWith("/checkout")) {
+    return { title: "Checkout", subtitle: "Capture customer details and confirm the order." };
+  }
+  return { title: "BanglaDrop", subtitle: "Professional operations for cash-on-delivery commerce." };
+}
+
+function LogoutButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        clearStoredAuth();
+        window.location.href = "/login";
+      }}
+      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+        <LogOut className="h-4 w-4" />
+      </span>
+      <span>Log Out</span>
+    </button>
+  );
+}
+
+function ProtectedRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: UserRole[];
+  children: ReactNode;
+}) {
+  const user = getStoredUser();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function PublicOnlyRoute({ children }: { children: ReactNode }) {
+  const user = getStoredUser();
+  if (user) {
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function SidebarContent({
+  pathname,
+  onNavigate,
+  onOpenWallet,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  onOpenWallet: () => void;
+}) {
+  const isSupplierRoute = pathname.startsWith("/supplier");
+  const menuItems = getMenuItems(pathname);
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex">
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <img src={logoImage} alt="BanglaDrop logo" className="w-8 h-8 rounded-lg object-cover" />
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">BanglaDrop</h1>
+    <div className="flex h-full flex-col">
+      <div className="border-b border-slate-200 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl ">
+            <img src={logoImage} alt="BanglaDrop logo" className="h-7 w-7 rounded-lg object-cover" />
+          </div>
+          <div>
+            <h1 className="text-sm font-semibold text-slate-900">BanglaDrop</h1>
+            <p className="text-xs text-slate-500">Commerce Console</p>
+          </div>
         </div>
-        <nav className="space-y-1">
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5">
+        <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workspace</p>
+        <nav className="mt-3 space-y-1.5">
           {menuItems.map((item) => {
             const active =
-              location.pathname === item.path ||
-              (!["/admin", "/supplier"].includes(item.path) && location.pathname.startsWith(`${item.path}/`));
+              pathname === item.path ||
+              (!["/admin", "/supplier"].includes(item.path) && pathname.startsWith(`${item.path}/`));
             const Icon = item.icon;
+
             return (
-               <Link
+              <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                onClick={onNavigate}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm outline-none transition-all focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
                   active
-                    ? "bg-slate-100 text-teal-700 font-medium"
-                    : "text-slate-600 hover:bg-slate-50"
+                    ? "bg-white font-semibold text-slate-900 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.45)]"
+                    : "text-slate-500 hover:bg-white hover:text-slate-900"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                {item.name}
+                <span
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                    active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span>{item.name}</span>
               </Link>
             );
           })}
         </nav>
       </div>
-      <div className="mt-auto p-4 border-t border-slate-200">
-        <Link to="/login" className="flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-50 transition-colors w-full mb-4">
-          <LogOut className="w-5 h-5" />
-          Log Out
-        </Link>
+
+      <div className="border-t border-slate-200 p-4">
         {isSupplierRoute ? (
-          <div className="bg-teal-50 p-4 rounded-xl">
-            <p className="text-xs text-teal-600 font-semibold uppercase mb-1">Profit Balance</p>
-            <p className="text-xl font-bold text-slate-900">Settlement</p>
-            <button
-              onClick={onOpenWallet}
-              className="mt-3 w-full bg-teal-600 hover:bg-teal-700 transition-colors text-white text-sm py-2 rounded-lg font-medium"
-            >
-              Pay to Dropshipper
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onOpenWallet}
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-[0_12px_30px_-24px_rgba(15,23,42,0.45)] transition-transform hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Settlement</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">Pay the dropshipper</p>
+              </div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <Wallet className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">Open the payout flow from the supplier workspace.</p>
+          </button>
         ) : null}
+
+        <div onClick={onNavigate}>
+          <LogoutButton />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Sidebar({ onOpenWallet }: { onOpenWallet: () => void }) {
+  const location = useLocation();
+
+  return (
+    <aside className="hidden h-full w-[272px] shrink-0 border-r border-slate-200 bg-[#f7f7f5] md:block">
+      <SidebarContent pathname={location.pathname} onOpenWallet={onOpenWallet} />
     </aside>
   );
 }
 
-function MobileHeader() {
+function MobileHeader({ onOpenWallet }: { onOpenWallet: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  const isSupplierRoute = location.pathname.startsWith("/supplier");
-  const menuItems = isAdminRoute
-    ? [
-        { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard },
-        { path: "/admin/pos", name: "POS", icon: Store },
-        { path: "/admin", name: "Orders", icon: ShieldAlert },
-        { path: "/admin/products", name: "Products", icon: Package },
-      ]
-    : isSupplierRoute
-      ? [
-          { path: "/supplier/dashboard", name: "Dashboard", icon: LayoutDashboard },
-          { path: "/supplier", name: "Orders", icon: PackageCheck },
-        ]
-    : [
-        { path: "/pos", name: "POS", icon: Store },
-        { path: "/dashboard", name: "Dashboard", icon: LayoutDashboard },
-      ];
+  const meta = getShellMeta(location.pathname);
 
   return (
-    <div className="md:hidden bg-white border-b border-slate-200 relative shrink-0">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-2">
-          <img src={logoImage} alt="BanglaDrop logo" className="w-8 h-8 rounded-lg object-cover" />
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">BanglaDrop</h1>
+    <div className="border-b border-slate-200 bg-[#fcfcfb] md:hidden">
+      <div className="flex items-center justify-between px-4 py-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">BanglaDrop</p>
+          <h1 className="mt-1 text-lg font-semibold text-slate-900">{meta.title}</h1>
         </div>
-        <button onClick={() => setIsOpen(!isOpen)} className="text-slate-600 hover:text-slate-900">
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        <button
+          type="button"
+          onClick={() => setIsOpen((value) => !value)}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600"
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-200 z-50">
-          <nav className="p-2 space-y-1">
-            {menuItems.map((item) => {
-              const active =
-                location.pathname === item.path ||
-                (!["/admin", "/supplier"].includes(item.path) && location.pathname.startsWith(`${item.path}/`));
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                    active
-                      ? "bg-slate-100 text-teal-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-            <Link
-              to="/login"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-slate-600 hover:bg-slate-50"
-            >
-              <LogOut className="w-5 h-5" />
-              Log Out
-            </Link>
-          </nav>
+
+      {isOpen ? (
+        <div className="border-t border-slate-200 bg-[#f7f7f5]">
+          <div className="h-[calc(100vh-97px)] overflow-y-auto">
+            <SidebarContent
+              pathname={location.pathname}
+              onNavigate={() => setIsOpen(false)}
+              onOpenWallet={() => {
+                setIsOpen(false);
+                onOpenWallet();
+              }}
+            />
+          </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
 function DesktopHeader() {
+  const location = useLocation();
+  const meta = getShellMeta(location.pathname);
+
   return (
-    <header className="hidden justify-between h-20 bg-white border-b border-slate-200 md:flex items-center px-8 shrink-0">
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">Welcome to BanglaDrop!</h2>
-        <p className="text-xs text-slate-500 uppercase tracking-wider">Cash on Delivery (COD) Enabled Marketplace</p>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-xs text-slate-500">Seller Status</p>
-          <p className="text-sm font-semibold text-emerald-600">Verified Agent</p>
+    <header className="hidden border-b border-slate-200 bg-[#fcfcfb] px-8 py-5 md:block">
+      <div className="flex items-center gap-6">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Operations</p>
+          <h2 className="mt-2 text-[28px] font-semibold tracking-tight text-slate-950">{meta.title}</h2>
+          <p className="mt-1 text-sm text-slate-500">{meta.subtitle}</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-slate-500 font-bold">
-          A
+
+        <div className="flex items-center gap-3">
+          <div className="relative hidden lg:block">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search orders, products, customers"
+              className="w-80 rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+            />
+          </div>
+
+          <button
+            type="button"
+            className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:text-slate-900"
+          >
+            <Bell className="h-4 w-4" />
+          </button>
+
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,_#111827_0%,_#4338ca_100%)] text-sm font-semibold text-white">
+              BD
+            </div>
+            <div className="hidden text-left xl:block">
+              <p className="text-sm font-semibold text-slate-900">BanglaDrop Team</p>
+              <p className="text-xs text-slate-500">Store operations</p>
+            </div>
+          </div>
         </div>
       </div>
     </header>
-  );
-}
-
-function StatusBar() {
-  return (
-    <footer className="h-10 bg-slate-900 text-[10px] text-slate-400 flex items-center justify-between px-4 md:px-8 uppercase tracking-widest shrink-0">
-      <div className="flex gap-4">
-        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Network Online</span>
-      </div>
-      <div className="hidden md:block">Payments processed via COD</div>
-    </footer>
   );
 }
 
@@ -257,23 +375,16 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
     const paymentWindow = window.open("", "_blank", "noopener,noreferrer");
 
     try {
-      const response = await fetch("/api/wallet/payout-checkout", {
+      const data = await apiFetch<{ paymentUrl: string }>("/api/wallet/payout-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: form.fullName,
           email: form.email,
           amount: amountNumber,
           note: form.note,
-          availableBalance: walletSummary.available,
           currentPath: window.location.pathname,
-        }),
+        })
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create payout checkout.");
-      }
 
       if (paymentWindow) {
         paymentWindow.location.href = data.paymentUrl;
@@ -292,140 +403,142 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_32px_90px_-36px_rgba(15,23,42,0.5)]">
-        <div className="border-b border-slate-200 bg-[linear-gradient(135deg,_#f8fffe_0%,_#e7f8f4_55%,_#ffffff_100%)] px-6 py-5 md:px-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
-                <Wallet className="h-3.5 w-3.5" />
-                Wallet Settlement
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-5xl overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_42px_120px_-52px_rgba(15,23,42,0.55)]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.2fr)_340px]">
+          <div className="p-6 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Supplier Settlement
+                </div>
+                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Pay the dropshipper</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Confirm the payout details below and we will launch the UddoktaPay checkout in a new tab.
+                </p>
               </div>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Pay the dropshipper</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                Enter the payout details below. The modal updates the remaining balance instantly, then opens the UddoktaPay sandbox checkout in a new tab.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:text-slate-900"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <form onSubmit={handleSubmit} className="space-y-5 p-6 md:p-8">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Dropshipper Name</label>
-              <input
-                type="text"
-                required
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                placeholder="e.g. Rahim Enterprise"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Dropshipper Email</label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                placeholder="supplier@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Amount to Pay</label>
-              <input
-                type="number"
-                min="1"
-                max={walletSummary.available}
-                required
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                placeholder="5000"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Payout Note</label>
-              <textarea
-                rows={3}
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                placeholder="Optional note for this settlement"
-              />
-            </div>
-
-            {error ? (
-              <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            ) : null}
-
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:text-slate-900"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || exceedsBalance || amountNumber <= 0}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? (
-                  <span className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                ) : (
-                  <>
-                    Pay To Dropshipper
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
+                <X className="h-5 w-5" />
               </button>
             </div>
-          </form>
 
-          <div className="border-t border-slate-200 bg-slate-50/80 p-6 lg:border-l lg:border-t-0 md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Live Summary</p>
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Dropshipper Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.fullName}
+                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                    placeholder="Rahim Enterprise"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Dropshipper Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                    placeholder="supplier@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Amount to Pay</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={walletSummary.available}
+                  required
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                  placeholder="5000"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Payout Note</label>
+                <textarea
+                  rows={4}
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                  placeholder="Optional note for this settlement"
+                />
+              </div>
+
+              {error ? (
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              ) : null}
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || exceedsBalance || amountNumber <= 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <>
+                      Pay To Dropshipper
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="border-t border-slate-200 bg-[#f7f7f5] p-6 lg:border-l lg:border-t-0 md:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Live Summary</p>
+            <div className="mt-5 space-y-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Available Balance</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">৳ {walletSummary.available}</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-950">৳ {walletSummary.available}</p>
               </div>
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Payout Amount</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">৳ {amountNumber}</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-950">৳ {amountNumber}</p>
               </div>
-              <div className={`rounded-2xl p-4 shadow-sm ${exceedsBalance ? "bg-red-50" : "bg-emerald-50"}`}>
+              <div className={`rounded-xl border p-4 ${exceedsBalance ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
                 <p className={`text-xs uppercase tracking-[0.22em] ${exceedsBalance ? "text-red-500" : "text-emerald-600"}`}>
                   Remaining Balance
                 </p>
-                <p className={`mt-2 text-2xl font-bold ${exceedsBalance ? "text-red-700" : "text-slate-900"}`}>
+                <p className={`mt-2 text-3xl font-semibold ${exceedsBalance ? "text-red-700" : "text-slate-950"}`}>
                   ৳ {remainingBalance}
                 </p>
                 <p className={`mt-2 text-xs ${exceedsBalance ? "text-red-600" : "text-slate-500"}`}>
                   {exceedsBalance
                     ? `This payout exceeds the available balance by ৳ ${amountNumber - walletSummary.available}.`
-                    : "The balance updates instantly as you change the payout amount."}
+                    : "The balance preview updates instantly as you edit the amount."}
                 </p>
               </div>
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Pending Profit</p>
-                <p className="mt-2 text-xl font-bold text-slate-900">৳ {walletSummary.pending}</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-950">৳ {walletSummary.pending}</p>
               </div>
             </div>
           </div>
@@ -444,8 +557,7 @@ function MainLayout({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
+    apiFetch<{ profits?: WalletSummary }>("/api/dashboard")
       .then((json) => {
         setWalletSummary({
           available: json.profits?.available ?? 0,
@@ -464,17 +576,14 @@ function MainLayout({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="flex bg-[#F8FAFC] font-sans text-slate-800 h-screen w-screen overflow-hidden">
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f7f7f5] text-slate-800">
         <Sidebar onOpenWallet={() => setIsWalletOpen(true)} />
-        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-          <MobileHeader />
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <MobileHeader onOpenWallet={() => setIsWalletOpen(true)} />
           <DesktopHeader />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="p-4 md:p-8">
-              {children}
-            </div>
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="mx-auto max-w-[1600px] px-4 py-4 md:px-8 md:py-6">{children}</div>
           </main>
-          <StatusBar />
         </div>
       </div>
       <WalletModal
@@ -491,25 +600,121 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Shop />} />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicOnlyRoute>
+              <Register />
+            </PublicOnlyRoute>
+          }
+        />
         <Route path="/shop/product/:productId" element={<ShopProduct />} />
         <Route
           path="*"
           element={
-            <MainLayout>
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/checkout/:productId" element={<Checkout />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/pos" element={<Products />} />
-                <Route path="/admin/products" element={<AdminProducts />} />
-                <Route path="/admin/products/new" element={<AdminProductForm />} />
-                <Route path="/admin/products/:productId/edit" element={<AdminProductForm />} />
-                <Route path="/supplier" element={<Supplier />} />
-                <Route path="/supplier/dashboard" element={<SupplierDashboard />} />
-              </Routes>
-            </MainLayout>
+            <ProtectedRoute allowedRoles={["admin", "supplier", "super_admin"]}>
+              <MainLayout>
+                <Routes>
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/pos"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                        <Products />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/checkout/:productId"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                        <Checkout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <Admin />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/pos"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <Products />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/products"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <AdminProducts />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/products/new"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <AdminProductForm />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/products/:productId/edit"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <AdminProductForm />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/supplier"
+                    element={
+                      <ProtectedRoute allowedRoles={["supplier", "super_admin"]}>
+                        <Supplier />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/supplier/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["supplier", "super_admin"]}>
+                        <SupplierDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
+              </MainLayout>
+            </ProtectedRoute>
           }
         />
       </Routes>

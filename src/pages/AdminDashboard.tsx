@@ -9,6 +9,8 @@ import {
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
+import { BarChartCard, DonutChartCard } from "../components/dashboardCharts";
+import { apiFetch } from "../lib/api";
 
 type DashboardData = {
   profits: { total: number; pending: number; available: number };
@@ -40,8 +42,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
+    apiFetch<DashboardData>("/api/dashboard")
       .then((json) => {
         setData(json);
         setLoading(false);
@@ -64,6 +65,22 @@ export default function AdminDashboard() {
       data.orders.length > 0 ? Math.round((deliveredOrders.length / data.orders.length) * 100) : 0;
     const returnRate = data.orders.length > 0 ? Math.round((returnedOrders.length / data.orders.length) * 100) : 0;
 
+    const revenueBars = [
+      { label: "Revenue", value: totalRevenue, color: "linear-gradient(180deg, #0f172a 0%, #334155 100%)" },
+      { label: "Cost", value: totalCost, color: "linear-gradient(180deg, #64748b 0%, #94a3b8 100%)" },
+      { label: "Profit", value: data.profits.total, color: "linear-gradient(180deg, #10b981 0%, #34d399 100%)" },
+      { label: "Pending", value: data.profits.pending, color: "linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%)" },
+    ];
+
+    const statusMix = [
+      { label: "Pending", value: data.orders.filter((order) => order.status === "Pending").length, color: "#f59e0b" },
+      { label: "Confirmed", value: confirmedOrders.length, color: "#0ea5e9" },
+      { label: "Packed", value: data.orders.filter((order) => order.status === "Packed").length, color: "#8b5cf6" },
+      { label: "Shipped", value: data.orders.filter((order) => order.status === "Shipped").length, color: "#6366f1" },
+      { label: "Delivered", value: deliveredOrders.length, color: "#10b981" },
+      { label: "Returned", value: returnedOrders.length, color: "#f43f5e" },
+    ].filter((item) => item.value > 0);
+
     return {
       deliveredOrders,
       returnedOrders,
@@ -74,13 +91,15 @@ export default function AdminDashboard() {
       averageOrderValue,
       fulfillmentRate,
       returnRate,
+      revenueBars,
+      statusMix,
     };
   }, [data]);
 
   if (loading || !data || !metrics) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
       </div>
     );
   }
@@ -90,7 +109,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-[#d7e3db] bg-[linear-gradient(135deg,_#f6faf7_0%,_#edf7f0_48%,_#ffffff_100%)] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.35)]">
+      <section className="overflow-hidden rounded-[20px] border border-[#d7e3db] bg-[linear-gradient(135deg,_#f6faf7_0%,_#edf7f0_48%,_#ffffff_100%)] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.35)]">
         <div className="grid gap-8 px-6 py-7 lg:grid-cols-[minmax(0,1.3fr)_340px] lg:px-8">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
@@ -105,22 +124,22 @@ export default function AdminDashboard() {
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Net Profit</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">৳ {data.profits.total}</p>
                 <p className="mt-1 text-xs text-emerald-700">Delivered orders converted into profit</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Available Balance</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">৳ {data.profits.available}</p>
                 <p className="mt-1 text-xs text-slate-500">Ready for settlement and payout</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Pending Profit</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">৳ {data.profits.pending}</p>
                 <p className="mt-1 text-xs text-slate-500">Currently tied to in-flight fulfillment</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">AOV</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">৳ {metrics.averageOrderValue}</p>
                 <p className="mt-1 text-xs text-slate-500">Average order selling value</p>
@@ -128,37 +147,37 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="rounded-[26px] border border-slate-200 bg-slate-900 p-5 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.6)]">
+          <div className="rounded-[20px] border border-slate-200 bg-slate-900 p-5 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.6)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Executive Snapshot</p>
                 <h2 className="mt-2 text-xl font-bold">Operations Health</h2>
               </div>
-              <div className="rounded-2xl bg-white/10 p-3">
+              <div className="rounded-xl bg-white/10 p-3">
                 <ChartNoAxesCombined className="h-5 w-5" />
               </div>
             </div>
 
             <div className="mt-6 space-y-3">
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Total Orders</span>
                   <span className="font-bold text-white">{data.orders.length}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Fulfillment Rate</span>
                   <span className="font-bold text-emerald-300">{metrics.fulfillmentRate}%</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Return Rate</span>
                   <span className="font-bold text-rose-300">{metrics.returnRate}%</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Awaiting Supplier Action</span>
                   <span className="font-bold text-amber-300">{metrics.pendingOrders.length}</span>
@@ -166,7 +185,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Revenue vs Cost</p>
               <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
@@ -184,52 +203,68 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Delivered Orders</span>
-                <div className="rounded-2xl bg-emerald-50 p-2 text-emerald-700">
-                  <PackageCheck className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.deliveredOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Completed and settled successfully</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Confirmed Orders</span>
-                <div className="rounded-2xl bg-sky-50 p-2 text-sky-700">
-                  <Boxes className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.confirmedOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Approved and queued for fulfillment</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Returns</span>
-                <div className="rounded-2xl bg-rose-50 p-2 text-rose-700">
-                  <RotateCcw className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.returnedOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Orders reversed after delivery flow</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Gross Margin Pool</span>
-                <div className="rounded-2xl bg-amber-50 p-2 text-amber-700">
-                  <CircleDollarSign className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">৳ {data.profits.total + data.profits.pending}</p>
-              <p className="mt-1 text-xs text-slate-500">Delivered plus in-transit profit</p>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Delivered Orders</span>
+            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
+              <PackageCheck className="h-4 w-4" />
             </div>
           </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.deliveredOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Completed and settled successfully</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Confirmed Orders</span>
+            <div className="rounded-lg bg-sky-50 p-2 text-sky-700">
+              <Boxes className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.confirmedOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Approved and queued for fulfillment</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Returns</span>
+            <div className="rounded-lg bg-rose-50 p-2 text-rose-700">
+              <RotateCcw className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.returnedOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Orders reversed after delivery flow</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Gross Margin Pool</span>
+            <div className="rounded-lg bg-amber-50 p-2 text-amber-700">
+              <CircleDollarSign className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">৳ {data.profits.total + data.profits.pending}</p>
+          <p className="mt-1 text-xs text-slate-500">Delivered plus in-transit profit</p>
+        </div>
+      </section>
 
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="grid gap-6 xl:grid-cols-2">
+        <BarChartCard
+          title="Financial Comparison"
+          subtitle="Revenue, cost, realized profit, and pending profit in one view."
+          data={metrics.revenueBars}
+          valuePrefix="৳ "
+        />
+        <DonutChartCard
+          title="Fulfillment Status Mix"
+          subtitle="See how the current order base is distributed across the pipeline."
+          centerLabel="Fulfillment Rate"
+          centerValue={`${metrics.fulfillmentRate}%`}
+          data={metrics.statusMix}
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Recent Order Activity</h2>
@@ -271,7 +306,7 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="p-4 font-medium text-slate-900">৳ {order.sellPrice}</td>
-                        <td className="p-4 font-bold text-teal-700">৳ {order.profit}</td>
+                        <td className="p-4 font-bold text-emerald-700">৳ {order.profit}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -282,23 +317,23 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Top Profit Orders</h2>
                 <p className="mt-1 text-sm text-slate-500">Highest contribution orders in the current dataset.</p>
               </div>
-              <div className="rounded-2xl bg-emerald-50 p-2 text-emerald-700">
+              <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
                 <BadgeDollarSign className="h-5 w-5" />
               </div>
             </div>
 
             <div className="mt-5 space-y-3">
               {topProfitableOrders.length === 0 ? (
-                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No order profit data yet.</div>
+                <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No order profit data yet.</div>
               ) : (
                 topProfitableOrders.map((order) => (
-                  <div key={order.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div key={order.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-semibold text-slate-900">{order.productName}</p>
@@ -315,7 +350,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900">Status Breakdown</h2>
             <p className="mt-1 text-sm text-slate-500">Track where orders are currently sitting in the fulfillment pipeline.</p>
 

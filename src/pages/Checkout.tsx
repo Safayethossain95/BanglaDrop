@@ -2,12 +2,14 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Truck, PackageCheck } from "lucide-react";
 import { useProductsStore } from "../store/productsStore";
+import { apiFetch } from "../lib/api";
 
 export default function Checkout() {
   const { productId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const loadProducts = useProductsStore((state) => state.loadProducts);
   const product = useProductsStore((state) => (productId ? state.getProductById(productId) : undefined));
   const returnTo = typeof location.state?.returnTo === "string" ? location.state.returnTo : "/dashboard";
   
@@ -23,6 +25,11 @@ export default function Checkout() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!hasHydrated) {
+      loadProducts().catch(() => undefined);
+      return;
+    }
+
     if (!hasHydrated) return;
     setLoading(false);
 
@@ -33,7 +40,7 @@ export default function Checkout() {
           : current
       ));
     }
-  }, [hasHydrated, product]);
+  }, [hasHydrated, loadProducts, product]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,18 +48,14 @@ export default function Checkout() {
     setError("");
 
     try {
-      const response = await fetch("/api/orders", {
+      await apiFetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
           productSnapshot: product,
           ...form
         })
       });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to place order.");
 
       navigate(returnTo);
     } catch (err: any) {

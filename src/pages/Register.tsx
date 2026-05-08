@@ -4,29 +4,33 @@ import logoImage from "../assets/images/logo.png";
 import { apiFetch } from "../lib/api";
 import { getDefaultRouteForRole, setStoredAuth, type AuthUser } from "../lib/auth";
 
-type LoginResponse = {
+type RegisterResponse = {
   message: string;
   token: string;
   user: AuthUser;
 };
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    password: ""
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (event: FormEvent) => {
+  const handleRegister = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const data = await apiFetch<LoginResponse>("/api/auth/login", {
+      const data = await apiFetch<RegisterResponse>("/api/auth/register", {
         method: "POST",
         requireAuth: false,
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(form)
       });
 
       setStoredAuth({
@@ -36,7 +40,7 @@ export default function Login() {
 
       navigate(getDefaultRouteForRole(data.user.role), { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
+      setError(err instanceof Error ? err.message : "Registration failed.");
       setLoading(false);
     }
   };
@@ -46,33 +50,58 @@ export default function Login() {
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
         <div className="flex flex-col items-center mb-8">
           <img src={logoImage} alt="BanglaDrop logo" className="w-12 h-12 rounded-xl object-cover mb-4 shadow-sm" />
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome to BanglaDrop</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create Your BanglaDrop Account</h1>
           <p className="text-sm text-slate-500 mt-2 text-center">
-            Sign in with your real BanglaDrop account to manage your COD dropshipping business.
+            Start with an admin account. A super admin can later change your role to supplier or super admin.
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleRegister} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+            <input
+              type="text"
+              required
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              className="w-full border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400"
+              placeholder="Your full name"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
             <input
               type="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400"
               placeholder="agent@bangladrop.com"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400"
+              placeholder="01XXXXXXXXX"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
             <input
               type="password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
               className="w-full border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400"
-              placeholder="••••••••"
+              placeholder="At least 6 characters"
             />
           </div>
 
@@ -90,26 +119,17 @@ export default function Login() {
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
-              "Sign In to Dashboard"
+              "Create Account"
             )}
           </button>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-500">
-          Not registered yet?{" "}
-          <Link to="/register" className="font-medium text-teal-600 hover:text-teal-700">
-            Create an account
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-teal-600 hover:text-teal-700">
+            Sign in
           </Link>
         </div>
-        <div className="mt-4 text-center text-xs text-slate-400">
-          Fixed super admin login:{" "}
-          <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-500">super.admin@gmail.com</span>
-          {" / "}
-          <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-500">super.admin</span>
-        </div>
-      </div>
-      <div className="mt-8 text-center text-xs text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
-        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Network Online • Secure role-based access
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { ShoppingBag, Search, ArrowRight, Truck, ShieldCheck, Headset, CreditCard, CheckCircle } from "lucide-react";
@@ -7,6 +8,13 @@ import { useProductsStore } from "../store/productsStore";
 export default function Shop() {
   const products = useProductsStore((state) => state.products);
   const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const loadProducts = useProductsStore((state) => state.loadProducts);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      loadProducts().catch(() => undefined);
+    }
+  }, [hasHydrated, loadProducts]);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col">

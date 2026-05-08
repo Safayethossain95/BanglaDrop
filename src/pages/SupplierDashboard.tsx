@@ -6,9 +6,10 @@ import {
   CircleDollarSign,
   LayoutList,
   PackageCheck,
-  RotateCcw,
   Truck,
 } from "lucide-react";
+import { BarChartCard, DonutChartCard } from "../components/dashboardCharts";
+import { apiFetch } from "../lib/api";
 
 type DashboardData = {
   profits: { total: number; pending: number; available: number };
@@ -43,8 +44,7 @@ export default function SupplierDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
+    apiFetch<DashboardData>("/api/dashboard")
       .then((json) => {
         setData(json);
         setLoading(false);
@@ -69,6 +69,23 @@ export default function SupplierDashboard() {
     const collectedValue = paidOrders.reduce((sum, order) => sum + order.sellPrice, 0);
     const returnRate = data.orders.length > 0 ? Math.round((returnedOrders.length / data.orders.length) * 100) : 0;
 
+    const pipelineBars = [
+      { label: "Pending", value: pendingOrders.length, color: "linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%)" },
+      { label: "Packed", value: packedOrders.length, color: "linear-gradient(180deg, #8b5cf6 0%, #a78bfa 100%)" },
+      { label: "Shipped", value: shippedOrders.length, color: "linear-gradient(180deg, #6366f1 0%, #818cf8 100%)" },
+      { label: "Paid", value: paidOrders.length, color: "linear-gradient(180deg, #10b981 0%, #34d399 100%)" },
+    ];
+
+    const pipelineMix = [
+      { label: "Pending", value: pendingOrders.length, color: "#f59e0b" },
+      { label: "Confirmed", value: confirmedOrders.length, color: "#0ea5e9" },
+      { label: "Packed", value: packedOrders.length, color: "#8b5cf6" },
+      { label: "Shipped", value: shippedOrders.length, color: "#6366f1" },
+      { label: "Delivered", value: deliveredOrders.length, color: "#10b981" },
+      { label: "Returned", value: returnedOrders.length, color: "#f43f5e" },
+      { label: "Paid", value: paidOrders.length, color: "#84cc16" },
+    ].filter((item) => item.value > 0);
+
     return {
       pendingOrders,
       confirmedOrders,
@@ -82,13 +99,15 @@ export default function SupplierDashboard() {
       totalCost,
       collectedValue,
       returnRate,
+      pipelineBars,
+      pipelineMix,
     };
   }, [data]);
 
   if (loading || !data || !metrics) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
       </div>
     );
   }
@@ -97,7 +116,7 @@ export default function SupplierDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-[#d7e3db] bg-[linear-gradient(135deg,_#f6faf7_0%,_#edf7f0_48%,_#ffffff_100%)] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.35)]">
+      <section className="overflow-hidden rounded-[20px] border border-[#d7e3db] bg-[linear-gradient(135deg,_#f6faf7_0%,_#edf7f0_48%,_#ffffff_100%)] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.35)]">
         <div className="grid gap-8 px-6 py-7 lg:grid-cols-[minmax(0,1.3fr)_340px] lg:px-8">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
@@ -112,22 +131,22 @@ export default function SupplierDashboard() {
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Open Queue</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">{metrics.openOrders.length}</p>
                 <p className="mt-1 text-xs text-slate-500">Orders waiting to move through the pipeline</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Paid Orders</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">{metrics.paidOrders.length}</p>
                 <p className="mt-1 text-xs text-slate-500">Orders fully completed and collected</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Collected Value</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">৳ {metrics.collectedValue}</p>
                 <p className="mt-1 text-xs text-emerald-700">Cash value captured from paid orders</p>
               </div>
-              <div className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-xl border border-white bg-white/90 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Return Rate</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900">{metrics.returnRate}%</p>
                 <p className="mt-1 text-xs text-slate-500">Share of orders marked returned</p>
@@ -135,37 +154,37 @@ export default function SupplierDashboard() {
             </div>
           </div>
 
-          <div className="rounded-[26px] border border-slate-200 bg-slate-900 p-5 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.6)]">
+          <div className="rounded-[20px] border border-slate-200 bg-slate-900 p-5 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.6)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Supplier Snapshot</p>
                 <h2 className="mt-2 text-xl font-bold">Processing Health</h2>
               </div>
-              <div className="rounded-2xl bg-white/10 p-3">
+              <div className="rounded-xl bg-white/10 p-3">
                 <LayoutList className="h-5 w-5" />
               </div>
             </div>
 
             <div className="mt-6 space-y-3">
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Pending Review</span>
                   <span className="font-bold text-amber-300">{metrics.pendingOrders.length}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Packed Orders</span>
                   <span className="font-bold text-violet-300">{metrics.packedOrders.length}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">In Transit</span>
                   <span className="font-bold text-indigo-300">{metrics.shippedOrders.length}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white/5 p-4">
+              <div className="rounded-xl bg-white/5 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Delivered</span>
                   <span className="font-bold text-emerald-300">{metrics.deliveredOrders.length}</span>
@@ -173,7 +192,7 @@ export default function SupplierDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Revenue vs Cost</p>
               <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
@@ -191,52 +210,67 @@ export default function SupplierDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Confirmed</span>
-                <div className="rounded-2xl bg-sky-50 p-2 text-sky-700">
-                  <CheckCheck className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.confirmedOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Approved and ready for warehouse action</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Packed</span>
-                <div className="rounded-2xl bg-violet-50 p-2 text-violet-700">
-                  <Box className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.packedOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Prepared and staged for handoff</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Delivered</span>
-                <div className="rounded-2xl bg-emerald-50 p-2 text-emerald-700">
-                  <PackageCheck className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.deliveredOrders.length}</p>
-              <p className="mt-1 text-xs text-slate-500">Reached the customer doorstep</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Supplier Value</span>
-                <div className="rounded-2xl bg-amber-50 p-2 text-amber-700">
-                  <CircleDollarSign className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">৳ {metrics.totalCost}</p>
-              <p className="mt-1 text-xs text-slate-500">Current supplier-side goods value</p>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Confirmed</span>
+            <div className="rounded-lg bg-sky-50 p-2 text-sky-700">
+              <CheckCheck className="h-4 w-4" />
             </div>
           </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.confirmedOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Approved and ready for warehouse action</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Packed</span>
+            <div className="rounded-lg bg-violet-50 p-2 text-violet-700">
+              <Box className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.packedOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Prepared and staged for handoff</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Delivered</span>
+            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
+              <PackageCheck className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{metrics.deliveredOrders.length}</p>
+          <p className="mt-1 text-xs text-slate-500">Reached the customer doorstep</p>
+        </div>
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">Supplier Value</span>
+            <div className="rounded-lg bg-amber-50 p-2 text-amber-700">
+              <CircleDollarSign className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">৳ {metrics.totalCost}</p>
+          <p className="mt-1 text-xs text-slate-500">Current supplier-side goods value</p>
+        </div>
+      </section>
 
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="grid gap-6 xl:grid-cols-2">
+        <BarChartCard
+          title="Pipeline Throughput"
+          subtitle="A visual read of the queue from pending to paid."
+          data={metrics.pipelineBars}
+        />
+        <DonutChartCard
+          title="Pipeline Status Mix"
+          subtitle="See how supplier workload is distributed across all order stages."
+          centerLabel="Paid Orders"
+          centerValue={String(metrics.paidOrders.length)}
+          data={metrics.pipelineMix}
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Recent Fulfillment Activity</h2>
@@ -278,7 +312,7 @@ export default function SupplierDashboard() {
                           </span>
                         </td>
                         <td className="p-4 font-medium text-slate-900">৳ {order.supplierPrice}</td>
-                        <td className="p-4 font-medium text-teal-700">৳ {order.sellPrice}</td>
+                        <td className="p-4 font-medium text-emerald-700">৳ {order.sellPrice}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -289,13 +323,13 @@ export default function SupplierDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Pipeline Breakdown</h2>
                 <p className="mt-1 text-sm text-slate-500">See where orders are sitting in the supplier workflow.</p>
               </div>
-              <div className="rounded-2xl bg-slate-100 p-2 text-slate-700">
+              <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
                 <Truck className="h-5 w-5" />
               </div>
             </div>
@@ -325,26 +359,6 @@ export default function SupplierDashboard() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">Supplier Notes</h2>
-            <p className="mt-1 text-sm text-slate-500">High-level reminders for keeping fulfillment healthy.</p>
-
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="font-semibold text-slate-900">Prioritize pending and confirmed orders first</p>
-                <p className="mt-1 text-sm text-slate-500">The earliest queue stages usually create the biggest downstream bottlenecks.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="font-semibold text-slate-900">Track delivered orders that are not yet paid</p>
-                <p className="mt-1 text-sm text-slate-500">Closing that gap keeps settlements and performance reporting accurate.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="font-semibold text-slate-900">Watch the return rate</p>
-                <p className="mt-1 text-sm text-slate-500">A rising return percentage often signals issues with delivery quality or product expectations.</p>
-              </div>
             </div>
           </div>
         </div>

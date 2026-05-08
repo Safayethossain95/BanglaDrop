@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowRight,
@@ -16,9 +16,16 @@ export default function Products() {
   const location = useLocation();
   const products = useProductsStore((state) => state.products);
   const hasHydrated = useProductsStore((state) => state.hasHydrated);
+  const loadProducts = useProductsStore((state) => state.loadProducts);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const deferredQuery = useDeferredValue(query);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      loadProducts().catch(() => undefined);
+    }
+  }, [hasHydrated, loadProducts]);
 
   if (!hasHydrated) {
     return (
@@ -104,7 +111,7 @@ export default function Products() {
             </div>
           </div>
 
-          <div className="grid gap-6 p-4 md:p-6 xl:grid-cols-[minmax(0,1.65fr)_380px]">
+          <div className="grid gap-6 p-4 md:p-6 xl:grid-cols-1">
             <div className="space-y-6">
               <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -164,7 +171,7 @@ export default function Products() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[980px] text-left">
+                    <table className="w-full min-w-[1180px] table-fixed text-left">
                       <thead className="bg-white text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                         <tr>
                           <th className="px-5 py-4">Product</th>
@@ -182,41 +189,41 @@ export default function Products() {
 
                           return (
                             <tr key={product.id} className="transition-colors hover:bg-slate-50/80">
-                              <td className="px-5 py-4">
+                              <td className="w-[38%] px-5 py-4">
                                 <div className="flex items-center gap-4">
-                                  <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+                                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
                                     <img
                                       src={product.image}
                                       alt={product.name}
                                       className="h-full w-full object-cover"
                                     />
                                   </div>
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-bold text-slate-900">{product.name}</p>
-                                    <p className="mt-1 line-clamp-2 max-w-[340px] text-xs leading-5 text-slate-500">
+                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
                                       {product.description}
                                     </p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-5 py-4">
+                              <td className="w-[12%] px-5 py-4">
                                 <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                                   {product.category}
                                 </span>
                               </td>
-                              <td className="px-5 py-4 font-semibold text-slate-700">৳ {product.supplierPrice}</td>
-                              <td className="px-5 py-4 font-semibold text-slate-900">৳ {product.suggestedRetailPrice}</td>
-                              <td className="px-5 py-4">
+                              <td className="w-[10%] px-5 py-4 font-semibold text-slate-700">৳ {product.supplierPrice}</td>
+                              <td className="w-[10%] px-5 py-4 font-semibold text-slate-900">৳ {product.suggestedRetailPrice}</td>
+                              <td className="w-[10%] px-5 py-4">
                                 <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                                   ৳ {margin}
                                 </span>
                               </td>
-                              <td className="px-5 py-4">
+                              <td className="w-[10%] px-5 py-4">
                                 <span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
                                   Ready to Sell
                                 </span>
                               </td>
-                              <td className="px-5 py-4 text-right">
+                              <td className="w-[10%] px-5 py-4 text-right">
                                 <Link
                                   to={`/checkout/${product.id}`}
                                   state={checkoutState}
@@ -238,7 +245,9 @@ export default function Products() {
               </div>
             </div>
 
-            <aside className="space-y-4">
+          </div>
+          <div className="grid grid-cols-2 gap-4 px-4">
+
               <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.24)]">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div>
@@ -288,6 +297,7 @@ export default function Products() {
                   </div>
                 </div>
               </div>
+            <aside className="space-y-4">
 
               <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-900 text-white shadow-[0_16px_45px_-28px_rgba(15,23,42,0.4)]">
                 <div className="border-b border-white/10 px-5 py-4">
