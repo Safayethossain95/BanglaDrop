@@ -53,6 +53,8 @@ export default function Checkout() {
         body: JSON.stringify({
           productId,
           productSnapshot: product,
+          orderSourceSite: "BanglaDrop POS",
+          orderSourcePath: window.location.pathname,
           ...form
         })
       });

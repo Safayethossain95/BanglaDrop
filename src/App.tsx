@@ -14,6 +14,7 @@ import {
   Menu,
   Package,
   PackageCheck,
+  ReceiptText,
   Search,
   Settings,
   ShieldAlert,
@@ -35,6 +36,8 @@ import AdminProductForm from "./pages/AdminProductForm";
 import AdminProducts from "./pages/AdminProducts";
 import Supplier from "./pages/Supplier";
 import SupplierDashboard from "./pages/SupplierDashboard";
+import SupplierSettings from "./pages/SupplierSettings";
+import SupplierTransactions from "./pages/SupplierTransactions";
 import Shop from "./pages/Shop";
 import ShopProduct from "./pages/ShopProduct";
 import { apiFetch } from "./lib/api";
@@ -47,9 +50,28 @@ type WalletSummary = {
 };
 
 type WalletModalProps = {
+  activeGateway: {
+    label: string;
+    provider: string;
+  } | null;
   isOpen: boolean;
   onClose: () => void;
   walletSummary: WalletSummary;
+};
+
+type PaymentGatewaySummary = {
+  provider: string;
+  label: string;
+  isEnabled: boolean;
+  isDefault: boolean;
+  isConfigured: boolean;
+  environment?: "sandbox" | "production";
+  merchantName?: string;
+  credentials?: {
+    accountNumber?: string;
+    accountType?: string;
+    instructions?: string;
+  };
 };
 
 type NavigationItem = {
@@ -68,6 +90,8 @@ const adminMenu: NavigationItem[] = [
 const supplierMenu: NavigationItem[] = [
   { path: "/supplier/dashboard", name: "Dashboard", icon: LayoutDashboard },
   { path: "/supplier", name: "Orders", icon: PackageCheck },
+  { path: "/supplier/transactions", name: "Transactions", icon: ReceiptText },
+  { path: "/supplier/settings", name: "Settings", icon: Settings },
 ];
 
 const sellerMenu: NavigationItem[] = [
@@ -96,6 +120,12 @@ function getShellMeta(pathname: string) {
   }
   if (pathname.startsWith("/supplier/dashboard")) {
     return { title: "Supplier dashboard", subtitle: "Keep fulfillment moving and watch payout readiness." };
+  }
+  if (pathname.startsWith("/supplier/settings")) {
+    return { title: "Supplier settings", subtitle: "Configure payment gateways and supplier-side checkout controls." };
+  }
+  if (pathname.startsWith("/supplier/transactions")) {
+    return { title: "Supplier transactions", subtitle: "Review payout records and submitted transaction IDs." };
   }
   if (pathname.startsWith("/supplier")) {
     return { title: "Supplier orders", subtitle: "Update order status and clear the processing queue." };
@@ -338,15 +368,19 @@ function DesktopHeader() {
   );
 }
 
-function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
+function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletModalProps) {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
     amount: "",
     note: "",
+    transactionId: "",
+    senderNumber: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const isManualUddoktaPay = activeGateway?.provider === "uddoktapay";
 
   useEffect(() => {
     if (!isOpen) {
@@ -355,9 +389,12 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
         email: "",
         amount: "",
         note: "",
+        transactionId: "",
+        senderNumber: "",
       });
       setSubmitting(false);
       setError("");
+      setSuccess("");
     }
   }, [isOpen]);
 
@@ -371,28 +408,39 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
     event.preventDefault();
     setSubmitting(true);
     setError("");
+    setSuccess("");
 
-    const paymentWindow = window.open("", "_blank", "noopener,noreferrer");
+    const paymentWindow = isManualUddoktaPay ? null : window.open("", "_blank", "noopener,noreferrer");
 
     try {
-      const data = await apiFetch<{ paymentUrl: string }>("/api/wallet/payout-checkout", {
+      const data = await apiFetch<{ paymentUrl?: string; message?: string }>("/api/wallet/payout-checkout", {
         method: "POST",
         body: JSON.stringify({
           fullName: form.fullName,
           email: form.email,
           amount: amountNumber,
           note: form.note,
+          transactionId: form.transactionId,
+          senderNumber: form.senderNumber,
           currentPath: window.location.pathname,
+          provider: activeGateway?.provider,
         })
       });
 
-      if (paymentWindow) {
+      if (data.paymentUrl && paymentWindow) {
         paymentWindow.location.href = data.paymentUrl;
-      } else {
-        window.open(data.paymentUrl, "_blank", "noopener,noreferrer");
+        onClose();
+        return;
       }
 
-      onClose();
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, "_blank", "noopener,noreferrer");
+        onClose();
+        return;
+      }
+
+      setSuccess(data.message || "Payout details recorded successfully.");
+      setSubmitting(false);
     } catch (err) {
       if (paymentWindow) {
         paymentWindow.close();
@@ -415,7 +463,7 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
                 </div>
                 <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Pay the dropshipper</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Confirm the payout details below and we will launch the UddoktaPay checkout in a new tab.
+                  Confirm the payout details below and we will launch the configured payment gateway in a new tab.
                 </p>
               </div>
               <button
@@ -486,6 +534,61 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
                 </div>
               ) : null}
 
+              {success ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {success}
+                </div>
+              ) : null}
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <span className="font-semibold text-slate-900">Active gateway:</span>{" "}
+                {activeGateway ? `${activeGateway.label} (${activeGateway.provider})` : "Not configured yet"}
+              </div>
+
+              {isManualUddoktaPay ? (
+                <>
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                    <p className="font-semibold text-slate-900">UddoktaPay send money details</p>
+                    <p className="mt-1">Receiver: {activeGateway?.merchantName || "Not set"}</p>
+                    <p className="mt-1">Number: {activeGateway?.credentials?.accountNumber || "Not set"}</p>
+                    <p className="mt-1">
+                      Instructions: {activeGateway?.credentials?.instructions || "Send money, then submit the transaction ID below."}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">Transaction ID</label>
+                      <input
+                        type="text"
+                        required={isManualUddoktaPay}
+                        value={form.transactionId}
+                        onChange={(e) => setForm({ ...form, transactionId: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                        placeholder="Enter UddoktaPay transaction ID"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">Sender Number</label>
+                      <input
+                        type="text"
+                        value={form.senderNumber}
+                        onChange={(e) => setForm({ ...form, senderNumber: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
+                        placeholder="Optional sender mobile number"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
+              {!activeGateway ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Configure and enable a supplier payment gateway in `Settings` before starting this payout.
+                </div>
+              ) : null}
+
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -496,14 +599,14 @@ function WalletModal({ isOpen, onClose, walletSummary }: WalletModalProps) {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || exceedsBalance || amountNumber <= 0}
+                  disabled={submitting || exceedsBalance || amountNumber <= 0 || !activeGateway || (isManualUddoktaPay && !form.transactionId.trim())}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? (
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   ) : (
                     <>
-                      Pay To Dropshipper
+                      {isManualUddoktaPay ? "Submit Transaction ID" : "Pay To Dropshipper"}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -555,6 +658,7 @@ function MainLayout({ children }: { children: ReactNode }) {
     pending: 0,
     total: 0,
   });
+  const [activeGateway, setActiveGateway] = useState<PaymentGatewaySummary | null>(null);
 
   useEffect(() => {
     apiFetch<{ profits?: WalletSummary }>("/api/dashboard")
@@ -572,6 +676,17 @@ function MainLayout({ children }: { children: ReactNode }) {
           total: 0,
         });
       });
+
+    apiFetch<{ gateways: PaymentGatewaySummary[] }>("/api/payment-gateways")
+      .then((json) => {
+        const selected = json.gateways.find((gateway) => gateway.isEnabled && gateway.isDefault && gateway.isConfigured)
+          || json.gateways.find((gateway) => gateway.isEnabled && gateway.isConfigured)
+          || null;
+        setActiveGateway(selected);
+      })
+      .catch(() => {
+        setActiveGateway(null);
+      });
   }, [isWalletOpen]);
 
   return (
@@ -587,6 +702,7 @@ function MainLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
       <WalletModal
+        activeGateway={activeGateway}
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
         walletSummary={walletSummary}
@@ -700,6 +816,22 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["supplier", "super_admin"]}>
                         <SupplierDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/supplier/transactions"
+                    element={
+                      <ProtectedRoute allowedRoles={["supplier", "super_admin"]}>
+                        <SupplierTransactions />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/supplier/settings"
+                    element={
+                      <ProtectedRoute allowedRoles={["supplier", "super_admin"]}>
+                        <SupplierSettings />
                       </ProtectedRoute>
                     }
                   />
