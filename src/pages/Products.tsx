@@ -225,7 +225,7 @@ export default function Products() {
                               </td>
                               <td className="px-3 py-3 whitespace-nowrap text-right">
                                 <Link
-                                  to={`/checkout/${product.id}`}
+                                  to={`/admin/checkout/${product.id}`}
                                   state={checkoutState}
                                   className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-black"
                                   id={`sell-btn-${product.id}`}

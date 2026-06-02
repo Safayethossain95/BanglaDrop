@@ -63,9 +63,10 @@ function InvoiceModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.55)] print:max-h-none print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 print:hidden">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center">
+        <div className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.55)] print:max-h-none print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 print:hidden">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Supplier Invoice</p>
             <h2 className="mt-1 text-lg font-semibold text-slate-950">Compact Packing Copy</h2>
@@ -89,8 +90,8 @@ function InvoiceModal({
           </div>
         </div>
 
-        <div className="max-h-[calc(92vh-65px)] overflow-y-auto p-4 print:max-h-none print:overflow-visible print:p-0">
-          <div className="border border-slate-300 bg-white text-slate-900 print:border-slate-400">
+          <div className="max-h-[calc(100vh-2rem-65px)] overflow-y-auto p-4 print:max-h-none print:overflow-visible print:p-0">
+            <div className="border border-slate-300 bg-white text-slate-900 print:border-slate-400">
             <div className="grid gap-3 border-b border-slate-300 px-4 py-3 print:gap-2 print:px-3 print:py-2 md:grid-cols-[1.2fr_0.8fr]">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">BanglaDrop Fulfillment</p>
@@ -205,6 +206,7 @@ function InvoiceModal({
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

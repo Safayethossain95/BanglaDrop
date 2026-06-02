@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
+import { getStoredUser } from "../lib/auth";
+import { useLocation } from "react-router-dom";
 
 type SettlementRecord = {
   id: string;
@@ -18,6 +20,8 @@ type SettlementRecord = {
 
 function getStatusClasses(status: string) {
   if (status === "COMPLETED") return "bg-emerald-100 text-emerald-700";
+  if (status === "RECEIVED") return "bg-sky-100 text-sky-700";
+  if (status === "NOT_RECEIVED") return "bg-rose-100 text-rose-700";
   if (status === "PENDING") return "bg-amber-100 text-amber-700";
   if (status === "FAILED") return "bg-rose-100 text-rose-700";
   if (status === "CANCELLED") return "bg-slate-200 text-slate-700";
@@ -26,25 +30,64 @@ function getStatusClasses(status: string) {
 
 function getGatewayLabel(provider: string) {
   if (provider === "bkash") return "bKash";
-  if (provider === "uddoktapay") return "UddoktaPay";
+  if (provider === "uddoktapay") return "Send Money";
   return provider;
 }
 
 export default function SupplierTransactions() {
   const [transactions, setTransactions] = useState<SettlementRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const user = getStoredUser();
+  const location = useLocation();
+  const isAdminViewer = user?.role === "admin" || location.pathname.startsWith("/admin");
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const allowComplete = user?.role === "supplier" || (user?.role === "super_admin" && !isAdminRoute);
+  const pageTitle = isAdminViewer ? "Transaction log" : "Supplier transaction log";
+  const emptyMessage = isAdminViewer
+    ? "No transaction records found yet."
+    : "No supplier transactions recorded yet.";
 
-  useEffect(() => {
+  const loadTransactions = () => {
     apiFetch<{ settlements: SettlementRecord[] }>("/api/settlements")
       .then((json) => {
         setTransactions(json.settlements || []);
+        setUpdatingId(null);
         setLoading(false);
       })
       .catch(() => {
         setTransactions([]);
+        setUpdatingId(null);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadTransactions();
   }, []);
+
+  const handleStatusChange = async (settlementId: string, status: string) => {
+    setUpdatingId(settlementId);
+
+    try {
+      await apiFetch(`/api/settlements/${settlementId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      loadTransactions();
+    } catch (_error) {
+      setUpdatingId(null);
+      loadTransactions();
+    }
+  };
+
+  const getStatusOptions = (currentStatus: string) => {
+    const allowed = allowComplete
+      ? ["RECEIVED", "NOT_RECEIVED", "COMPLETED"]
+      : ["RECEIVED", "NOT_RECEIVED"];
+
+    return [currentStatus, ...allowed.filter((status) => status !== currentStatus)];
+  };
 
   if (loading) {
     return (
@@ -61,9 +104,9 @@ export default function SupplierTransactions() {
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
             Transactions
           </div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Supplier transaction log</h1>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">{pageTitle}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-            Review payout records with the key details you need, including the submitted transaction ID.
+            Review recorded payout details, including the amount and submitted transaction ID.
           </p>
         </div>
       </section>
@@ -85,7 +128,7 @@ export default function SupplierTransactions() {
               {transactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
-                    No supplier transactions recorded yet.
+                    {emptyMessage}
                   </td>
                 </tr>
               ) : (
@@ -108,9 +151,24 @@ export default function SupplierTransactions() {
                       {transaction.gateway_payment_id || "Not submitted"}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(transaction.status)}`}>
-                        {transaction.status}
-                      </span>
+                      {["FAILED", "CANCELLED", "COMPLETED"].includes(transaction.status) ? (
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(transaction.status)}`}>
+                          {transaction.status}
+                        </span>
+                      ) : (
+                        <select
+                          value={transaction.status}
+                          disabled={updatingId === transaction.id}
+                          onChange={(event) => handleStatusChange(transaction.id, event.target.value)}
+                          className={`w-20 min-w-0 rounded-lg border px-2 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] outline-none transition-all ${getStatusClasses(transaction.status)}`}
+                        >
+                          {getStatusOptions(transaction.status).map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
-import { ShoppingBag, Search, ArrowRight, Truck, ShieldCheck, Headset, CreditCard, CheckCircle } from "lucide-react";
+import { ShoppingBag, Search, ArrowRight, Truck, ShieldCheck, Headset, CreditCard, CheckCircle,Zap, Shield, Battery } from "lucide-react";
 import logoImage from "../assets/images/logo.png";
 import { useProductsStore } from "../store/productsStore";
-
 export default function Shop() {
   const products = useProductsStore((state) => state.products);
   const hasHydrated = useProductsStore((state) => state.hasHydrated);
@@ -16,6 +15,26 @@ export default function Shop() {
     }
   }, [hasHydrated, loadProducts]);
 
+
+// Types for the component props
+interface HeroSectionProps {
+  onShopClick?: () => void;
+  onLearnMoreClick?: () => void;
+}
+
+// Feature item interface
+interface FeatureItem {
+  icon: React.ReactNode;
+  text: string;
+}
+
+
+  // Features data
+  const features: FeatureItem[] = [
+    { icon: <Zap className="w-5 h-5 text-teal-500" />, text: "Fast Charging" },
+    { icon: <Shield className="w-5 h-5 text-teal-500" />, text: "Premium Quality" },
+    { icon: <Battery className="w-5 h-5 text-teal-500" />, text: "Long Battery Life" }
+  ];
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col">
       {/* 1. Navbar */}
@@ -51,39 +70,128 @@ export default function Shop() {
       </header>
 
       <main className="flex-1">
-        {/* 2. Hero Section */}
-        <section className="relative overflow-hidden bg-slate-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 md:pt-32 md:pb-40">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="max-w-2xl relative z-10">
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1] mb-6">
-                  Elevate Your <br />
-                  <span className="text-teal-600">Everyday Style.</span>
-                </h1>
-                <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed max-w-lg">
-                  Discover our exclusive collection of premium lifestyle products designed for modern living. Now with seamless Cash on Delivery.
-                </p>
-                <div className="flex flex-wrap items-center gap-4">
-                  <a href="#shop" className="bg-slate-900 hover:bg-black text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-xl shadow-slate-900/20 flex items-center gap-2">
-                    Shop Collection <ArrowRight className="w-5 h-5" />
-                  </a>
-                  <a href="#" className="px-8 py-4 rounded-full font-semibold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all">
-                    Learn More
-                  </a>
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 md:pt-32 md:pb-40 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <div className="max-w-2xl relative z-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-2 mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+              </span>
+              <span className="text-sm font-medium text-teal-700">New Arrivals 2026</span>
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1] mb-6">
+              Power Up Your
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-400">
+                Digital Life.
+              </span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-slate-500 mb-8 leading-relaxed max-w-lg">
+              Discover premium electronic accessories engineered for performance and style. 
+              From fast-charging cables to wireless earbuds, elevate your tech experience today.
+            </p>
+
+            {/* Features */}
+            <div className="flex flex-wrap gap-6 mb-10">
+              {features?.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  {feature.icon}
+                  <span className="text-sm font-medium text-slate-600">{feature.text}</span>
                 </div>
-              </div>
-              <div className="relative lg:h-[600px] hidden md:block">
-                {/* Decorative blob */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
-                <img 
-                  src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2670&auto=format&fit=crop" 
-                  alt="Hero Summer Collection" 
-                  className="relative z-10 w-full h-full object-cover rounded-[2.5rem] shadow-2xl"
-                />
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap items-center gap-4">
+              <a 
+              href="#shop"
+                className="group bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 shadow-xl shadow-slate-900/20 flex items-center gap-2 transform hover:scale-105"
+              >
+                Shop Now
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <a 
+               href="#shop"
+                className="px-8 py-4 rounded-full font-semibold text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-slate-300 hover:bg-white transition-all duration-300"
+              >
+                Explore Products
+              </a>
+            </div>
+
+            {/* Trust indicators */}
+            <div className="mt-8 pt-6 border-t border-slate-200">
+              <p className="text-xs text-slate-400 mb-3">TRUSTED BY TECH ENTHUSIASTS</p>
+              <div className="flex gap-6 text-slate-500">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-slate-700">2.5K+</span>
+                  <span className="text-sm">5-Star Reviews</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-slate-700">Free</span>
+                  <span className="text-sm">Tech Support</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-slate-700">COD</span>
+                  <span className="text-sm">Available</span>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+
+          {/* Right Image Section */}
+          <div className="relative lg:h-[600px] hidden md:block">
+            {/* Decorative blobs */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-teal-100 to-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse"></div>
+            
+            {/* Main Image Card */}
+            <div className="relative z-10 bg-gradient-to-br from-slate-100 to-white rounded-[2.5rem] shadow-2xl overflow-hidden transform hover:scale-[1.02] transition-all duration-500">
+              <img 
+                src="https://images.unsplash.com/photo-1592890288564-76628a30a657?q=80&w=2670&auto=format&fit=crop" 
+                alt="Premium electronic accessories collection featuring wireless earbuds, smartwatch, and charging devices" 
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Floating badge */}
+              <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="bg-teal-100 rounded-full p-2">
+                    <Zap className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Fast Delivery</p>
+                    <p className="font-bold text-slate-900 text-sm">Free Shipping</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Discount badge */}
+              <div className="absolute bottom-6 left-6 bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl px-4 py-2 shadow-lg">
+                <p className="text-white font-bold text-sm">Up to 30% OFF</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden md:block">
+        <div className="flex flex-col items-center gap-2 text-slate-400">
+          <span className="text-xs uppercase tracking-wider font-medium">Scroll</span>
+          <div className="w-0.5 h-8 bg-gradient-to-b from-teal-500 to-transparent"></div>
+        </div>
+      </div>
+    </section>
 
         {/* 3. Value Propositions */}
         <section className="py-20 bg-white border-y border-slate-100">

@@ -146,7 +146,7 @@ export default function SupplierSettings() {
           method: "PUT",
           body: JSON.stringify(uddoktaPayForm),
         });
-        setSuccess("UddoktaPay send money settings saved. Suppliers can now record transaction IDs for admin review.");
+        setSuccess("Send Money settings saved. Suppliers can now save the sent amount and transaction ID.");
       }
       await loadGateways();
     } catch (err) {
@@ -194,7 +194,7 @@ export default function SupplierSettings() {
 
   const bkashGateway = gateways.find((gateway) => gateway.provider === "bkash");
   const activeGatewayConfig = gateways.find((gateway) => gateway.provider === selectedProvider);
-  const activeGatewayLabel = selectedProvider === "uddoktapay" ? "UddoktaPay Send Money" : "bKash Sandbox";
+  const activeGatewayLabel = selectedProvider === "uddoktapay" ? "Send Money" : "bKash Sandbox";
 
   if (loading) {
     return (
@@ -217,7 +217,7 @@ export default function SupplierSettings() {
               Payment gateway control room
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-              Connect your supplier-side payment gateway here. bKash sandbox supports gateway checkout, and UddoktaPay supports send money tracking with transaction IDs for admin review.
+              Connect your supplier-side payment gateway here. bKash sandbox supports gateway checkout, and Send Money supports a manual amount and transaction ID record.
             </p>
           </div>
 
@@ -250,7 +250,7 @@ export default function SupplierSettings() {
                     {gateway.provider === "bkash"
                       ? "Sandbox checkout setup"
                       : gateway.provider === "uddoktapay"
-                        ? "Manual send money tracking"
+                        ? "Manual payout entry"
                         : "UI placeholder for upcoming integration"}
                   </p>
                 </div>
@@ -296,7 +296,7 @@ export default function SupplierSettings() {
               <p className="mt-2 text-sm text-slate-500">
                 {selectedProvider === "bkash"
                   ? "Save your sandbox merchant app credentials here, then run a live token test before using bKash in the payout flow."
-                  : "Save the UddoktaPay receiver details here so suppliers can send money manually and submit the transaction ID to admin."}
+                  : "Save the receiver details here so suppliers can send money manually and save the transaction ID in the app."}
               </p>
             </div>
 
@@ -322,7 +322,7 @@ export default function SupplierSettings() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
               >
                 <option value="bkash">bKash Sandbox</option>
-                <option value="uddoktapay">UddoktaPay Send Money</option>
+                <option value="uddoktapay">Send Money</option>
               </select>
             </div>
 
@@ -453,7 +453,7 @@ export default function SupplierSettings() {
                       value={uddoktaPayForm.instructions}
                       onChange={(event) => setUddoktaPayForm((current) => ({ ...current, instructions: event.target.value }))}
                       className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
-                      placeholder="Send money, then share the transaction ID with admin"
+                      placeholder="Send money manually, then save the transaction ID"
                     />
                   </div>
                 </div>
@@ -492,7 +492,7 @@ export default function SupplierSettings() {
 
             {selectedProvider === "uddoktapay" && activeGatewayConfig?.isConfigured ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Supplier payouts with UddoktaPay are recorded as manual send money. The supplier enters the transaction ID during payout so admin can verify it.
+                Supplier payouts with Send Money are recorded through manual entry only. The supplier enters the amount and transaction ID during payout.
               </div>
             ) : null}
 
@@ -548,8 +548,8 @@ export default function SupplierSettings() {
                 <p className="mt-1">We validate the merchant credentials by requesting a live sandbox token from the backend.</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
-                <p className="font-medium text-slate-900">UddoktaPay send money</p>
-                <p className="mt-1">Suppliers can manually send money, then submit the transaction ID so the admin can verify the payout.</p>
+                <p className="font-medium text-slate-900">Send Money</p>
+                <p className="mt-1">Suppliers can manually send money, then save the amount and transaction ID in the app.</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="font-medium text-slate-900">More gateways later</p>

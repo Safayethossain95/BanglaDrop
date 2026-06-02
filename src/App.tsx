@@ -83,6 +83,7 @@ type NavigationItem = {
 const adminMenu: NavigationItem[] = [
   { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard },
   { path: "/admin", name: "Orders", icon: ShieldAlert },
+  { path: "/admin/transactions", name: "Transactions", icon: ReceiptText },
   { path: "/admin/products", name: "Products", icon: Package },
   { path: "/admin/pos", name: "POS", icon: Store },
 ];
@@ -96,6 +97,7 @@ const supplierMenu: NavigationItem[] = [
 
 const sellerMenu: NavigationItem[] = [
   { path: "/dashboard", name: "Dashboard", icon: Home },
+  { path: "/transactions", name: "Transactions", icon: ReceiptText },
   { path: "/admin/pos", name: "POS", icon: ShoppingBag },
 ];
 
@@ -109,6 +111,9 @@ function getShellMeta(pathname: string) {
   if (pathname.startsWith("/admin/dashboard")) {
     return { title: "Admin dashboard", subtitle: "Monitor orders, profit, and platform health." };
   }
+  if (pathname.startsWith("/admin/transactions")) {
+    return { title: "Admin transactions", subtitle: "Review payout records and submitted transaction IDs." };
+  }
   if (pathname.startsWith("/admin/products")) {
     return { title: "Product catalog", subtitle: "Manage pricing, listings, and sell-ready inventory." };
   }
@@ -120,6 +125,9 @@ function getShellMeta(pathname: string) {
   }
   if (pathname.startsWith("/supplier/dashboard")) {
     return { title: "Supplier dashboard", subtitle: "Keep fulfillment moving and watch payout readiness." };
+  }
+  if (pathname.startsWith("/transactions")) {
+    return { title: "Transactions", subtitle: "Review payout records and submitted transaction IDs." };
   }
   if (pathname.startsWith("/supplier/settings")) {
     return { title: "Supplier settings", subtitle: "Configure payment gateways and supplier-side checkout controls." };
@@ -451,9 +459,10 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-5xl overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_42px_120px_-52px_rgba(15,23,42,0.55)]">
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.2fr)_340px]">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center">
+        <div className="max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-[20px] border border-slate-200 bg-white shadow-[0_42px_120px_-52px_rgba(15,23,42,0.55)]">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.2fr)_340px]">
           <div className="p-6 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -463,7 +472,9 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
                 </div>
                 <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Pay the dropshipper</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Confirm the payout details below and we will launch the configured payment gateway in a new tab.
+                  {isManualUddoktaPay
+                    ? "Enter the payout details, send the money manually, then save the transaction ID here."
+                    : "Confirm the payout details below and we will launch the configured payment gateway in a new tab."}
                 </p>
               </div>
               <button
@@ -548,11 +559,11 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
               {isManualUddoktaPay ? (
                 <>
                   <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-                    <p className="font-semibold text-slate-900">UddoktaPay send money details</p>
+                    <p className="font-semibold text-slate-900">Send Money details</p>
                     <p className="mt-1">Receiver: {activeGateway?.merchantName || "Not set"}</p>
                     <p className="mt-1">Number: {activeGateway?.credentials?.accountNumber || "Not set"}</p>
                     <p className="mt-1">
-                      Instructions: {activeGateway?.credentials?.instructions || "Send money, then submit the transaction ID below."}
+                      Instructions: {activeGateway?.credentials?.instructions || "Send money manually, then save the transaction ID below."}
                     </p>
                   </div>
 
@@ -565,7 +576,7 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
                         value={form.transactionId}
                         onChange={(e) => setForm({ ...form, transactionId: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition-all focus:border-slate-300 focus:ring-4 focus:ring-slate-900/5"
-                        placeholder="Enter UddoktaPay transaction ID"
+                        placeholder="Enter transaction ID"
                       />
                     </div>
 
@@ -606,7 +617,7 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   ) : (
                     <>
-                      {isManualUddoktaPay ? "Submit Transaction ID" : "Pay To Dropshipper"}
+                      {isManualUddoktaPay ? "Save Transaction ID" : "Pay To Dropshipper"}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -644,6 +655,7 @@ function WalletModal({ activeGateway, isOpen, onClose, walletSummary }: WalletMo
                 <p className="mt-2 text-2xl font-semibold text-slate-950">৳ {walletSummary.pending}</p>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -748,10 +760,18 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="/checkout/:productId"
+                    path="/admin/checkout/:productId"
                     element={
                       <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                         <Checkout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/transactions"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                        <SupplierTransactions />
                       </ProtectedRoute>
                     }
                   />
@@ -776,6 +796,14 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                         <Products />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/transactions"
+                    element={
+                      <ProtectedRoute allowedRoles={["super_admin"]}>
+                        <SupplierTransactions />
                       </ProtectedRoute>
                     }
                   />
