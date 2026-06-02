@@ -21,6 +21,7 @@ export default function Admin() {
       .then((json) => {
         setData(json);
         setLoading(false);
+        console.log(json)
       });
   }, []);
 
@@ -89,7 +90,7 @@ export default function Admin() {
             <table className="w-full min-w-[920px] text-left">
               <thead className="bg-[#fcfcfb] text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                 <tr>
-                  <th className="px-5 py-4">Product</th>
+                  <th className="px-5 py-4">Product image</th>
                   <th className="px-5 py-4 v">Order ID</th>
                   <th className="px-5 py-4">Customer</th>
                   <th className="px-5 py-4">Address</th>
@@ -102,8 +103,7 @@ export default function Admin() {
                 {data.orders.map((order) => (
                   <tr key={order.id} className="transition-colors hover:bg-slate-50/70">
                     <td className="px-5 py-4">
-                      <div className="font-medium text-slate-900">{order.productName}</div>
-                      <div className="mt-1 text-xs text-slate-500">Supplier cost ৳ {order.supplierPrice}</div>
+                      <img className="w-10 h-full object-cover" src={order.productImage} alt={order.productName} />
                     </td>
                     <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-35">{order.id}</td>
                     <td className="px-5 py-4">

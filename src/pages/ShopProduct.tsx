@@ -346,6 +346,7 @@ const totalPrice = product.suggestedRetailPrice + getDeliveryFee();
       <span>Delivery</span>
       <div className="flex gap-2">
         <button
+        type="button"
           onClick={() => setDeliveryLocation('inside')}
           className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${
             deliveryLocation === 'inside'
@@ -356,6 +357,7 @@ const totalPrice = product.suggestedRetailPrice + getDeliveryFee();
           Inside Dhaka (60)
         </button>
         <button
+        type="button"
           onClick={() => setDeliveryLocation('outside')}
           className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${
             deliveryLocation === 'outside'
@@ -379,6 +381,12 @@ const totalPrice = product.suggestedRetailPrice + getDeliveryFee();
       <span>Total</span>
       <span>৳ {totalPrice}</span>
     </div>
+    <button
+  type="submit"
+  className="w-full mt-6 h-14 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl transition-all duration-200 shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40"
+>
+  Confirm Order
+</button>
   </div> 
 
 

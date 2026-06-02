@@ -12,19 +12,87 @@ import { BarChartCard, DonutChartCard } from "../components/dashboardCharts";
 import { apiFetch } from "../lib/api";
 
 type DashboardData = {
-  profits: { total: number; pending: number; available: number };
   orders: Array<{
     id: string;
-    productName: string;
-    customerName: string;
-    customerPhone: string;
-    profit: number;
-    sellPrice: number;
-    supplierPrice: number;
-    status: string;
-    date: string;
+    order_code: string;
+    product_id: string;
+    product_name: string;  // maps to your productName
+    product_image: string;
+    category: string;
+    description: string;
+    order_source_site: string;
+    order_source_path: string;
+    customer_name: string;  // maps to your customerName
+    customer_phone: string; // maps to your customerPhone
+    address: string;
+    supplier_price: number;  // matches your supplierPrice
+    sell_price: number;     // matches your sellPrice
+    profit: number;         // matches your profit
+    status: string;         // matches your status
+    placed_by: string | null;
+    placed_by_name: string | null;
+    placed_by_email: string | null;
+    assigned_supplier_id: string | null;
+    assigned_supplier_name: string | null;
+    assigned_supplier_email: string | null;
+    status_updated_by: string | null;
+    status_updated_at: string;
+    created_at: string;
+    date?: string;          // You might need to map this from created_at
   }>;
 };
+
+// If you want to keep the exact same property names as before, create a mapper:
+type FormattedOrder = {
+  id: string;
+  productName: string;
+  customerName: string;
+  customerPhone: string;
+  profit: number;
+  sellPrice: number;
+  supplierPrice: number;
+  status: string;
+  date: string;
+};
+
+type FormattedDashboardData = {
+  profits: { total: number; pending: number; available: number };
+  orders: FormattedOrder[];
+};
+
+// Helper function to transform API response to your format
+function transformDashboardData(apiResponse: { orders: any[] }): FormattedDashboardData {
+  // Calculate profits from orders
+  const totalProfit = apiResponse.orders.reduce((sum, order) => sum + (order.profit || 0), 0);
+  const pendingProfit = apiResponse.orders
+    .filter(order => order.status === 'Pending')
+    .reduce((sum, order) => sum + (order.profit || 0), 0);
+  const availableProfit = apiResponse.orders
+    .filter(order => order.status === 'Delivered' || order.status === 'Paid')
+    .reduce((sum, order) => sum + (order.profit || 0), 0);
+
+  return {
+    profits: {
+      total: totalProfit,
+      pending: pendingProfit,
+      available: availableProfit
+    },
+    orders: apiResponse.orders.map(order => ({
+      id: order.id,
+      productName: order.product_name,
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+      profit: order.profit,
+      sellPrice: order.sell_price,
+      supplierPrice: order.supplier_price,
+      status: order.status,
+      date: order.created_at || order.date
+    }))
+  };
+}
+
+
+
 
 function getStatusClasses(status: string) {
   if (status === "Pending") return "bg-amber-100 text-amber-700";
@@ -43,13 +111,19 @@ export default function SupplierDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    apiFetch<DashboardData>("/api/dashboard")
-      .then((json) => {
-        setData(json);
-        setLoading(false);
-      });
-  }, []);
+ // Usage in your component:
+useEffect(() => {
+  apiFetch<{ orders: any[] }>("/api/orders")
+    .then((json) => {
+      const formattedData = transformDashboardData(json);
+      setData(formattedData);
+      setLoading(false);
+    })
+    .catch((error) => {
+      console.error("Error fetching orders:", error);
+      setLoading(false);
+    });
+}, []);
 
   const metrics = useMemo(() => {
     if (!data) return null;
