@@ -155,7 +155,7 @@ interface FeatureItem {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-teal-100 to-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse"></div>
             
             {/* Main Image Card */}
-            <div className="relative z-10 bg-gradient-to-br from-slate-100 to-white rounded-[2.5rem] shadow-2xl overflow-hidden transform hover:scale-[1.02] transition-all duration-500">
+            <div className="relative z-10 h-full bg-gradient-to-br from-slate-100 to-white rounded-[2.5rem] shadow-2xl overflow-hidden transform hover:scale-[1.02] transition-all duration-500">
               <img 
                 src="https://images.unsplash.com/photo-1592890288564-76628a30a657?q=80&w=2670&auto=format&fit=crop" 
                 alt="Premium electronic accessories collection featuring wireless earbuds, smartwatch, and charging devices" 
@@ -170,7 +170,6 @@ interface FeatureItem {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">Fast Delivery</p>
-                    <p className="font-bold text-slate-900 text-sm">Free Shipping</p>
                   </div>
                 </div>
               </div>

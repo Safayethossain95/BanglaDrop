@@ -14,7 +14,15 @@ export default function ShopProduct() {
     customerPhone: "",
     address: "",
   });
+const [deliveryLocation, setDeliveryLocation] = useState('inside'); // 'inside' or 'outside'
 
+// Calculate delivery fee
+const getDeliveryFee = () => {
+  return deliveryLocation === 'inside' ? 60 : 120;
+};
+
+// Calculate total
+const totalPrice = product.suggestedRetailPrice + getDeliveryFee();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +46,7 @@ export default function ShopProduct() {
         body: JSON.stringify({
           productId,
           productSnapshot: product,
-          sellPrice: product.suggestedRetailPrice,
+          sellPrice: totalPrice,
           ...form
         })
       });
@@ -83,140 +91,316 @@ export default function ShopProduct() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium">
-              <ArrowLeft className="w-5 h-5" />
-              Back to Store
-            </Link>
-            <div className="flex items-center gap-2 font-bold text-lg text-slate-900">
-              <img src={logoImage} alt="BanglaDrop logo" className="w-6 h-6 rounded object-cover" />
-              BanglaDrop
-            </div>
-            {/* Empty div for flex balance */}
-            <div className="w-24"></div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900">
+  {/* Header */}
+  <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200/70">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="h-16 flex items-center justify-between">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back to Store</span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <img
+            src={logoImage}
+            alt="logo"
+            className="w-9 h-9 rounded-xl object-cover shadow"
+          />
+          <span className="font-bold text-lg tracking-tight">
+            BanglaDrop
+          </span>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          {/* Image Gallery */}
-          <div className="flex flex-col gap-6">
-            <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white aspect-[4/5] object-cover object-center group shadow-sm">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover transition-transform duration-700 ease-out hover:scale-[1.03]"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                <div className="p-2 bg-teal-50 text-teal-600 rounded-lg shrink-0">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">Fast Delivery</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Dispatched within 24h</p>
-                </div>
+        <div />
+      </div>
+    </div>
+  </header>
+
+  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+    <div className="grid lg:grid-cols-2 gap-12 xl:gap-20">
+
+      {/* LEFT SIDE */}
+      <div className="space-y-6">
+
+        {/* Product Image */}
+        <div className="group relative overflow-hidden rounded-[32px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+
+          <div className="absolute top-5 left-5 z-20">
+            <span className="bg-emerald-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+              Best Seller
+            </span>
+          </div>
+
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full aspect-[4/5] object-cover transition duration-700 group-hover:scale-105"
+          />
+        </div>
+
+        {/* Trust Cards */}
+        <div className="grid grid-cols-2 gap-4">
+
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-blue-50">
+                <Truck className="w-6 h-6 text-blue-600" />
               </div>
-              <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                <div className="p-2 bg-teal-50 text-teal-600 rounded-lg shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">COD Allowed</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Pay safely on arrival</p>
-                </div>
+
+              <div>
+                <p className="font-bold">Fast Delivery</p>
+                <p className="text-sm text-slate-500">
+                  Delivered in 24-48 hours
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Product Info & Form */}
-          <div className="flex flex-col">
-            <div className="mb-8">
-              <h3 className="text-xs font-bold tracking-widest text-teal-600 uppercase mb-3">
-                {product.category}
-              </h3>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-4">{product.name}</h1>
-              <p className="text-3xl font-bold text-slate-900 mb-6">৳ {product.suggestedRetailPrice}</p>
-              
-              <div className="prose prose-slate max-w-none text-slate-600 pb-8 border-b border-slate-200">
-                <p>{product.description}</p>
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-emerald-50">
+                <ShieldCheck className="w-6 h-6 text-emerald-600" />
+              </div>
+
+              <div>
+                <p className="font-bold">Cash On Delivery</p>
+                <p className="text-sm text-slate-500">
+                  Pay after receiving
+                </p>
               </div>
             </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-bl-full -z-0"></div>
-              
-              <div className="relative z-10 space-y-1 mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">Express Checkout</h2>
-                <p className="text-sm text-slate-500">No payment needed now. Pay entirely with Cash on Delivery.</p>
+        </div>
+
+        {/* Reviews */}
+        <div className="bg-white rounded-[32px] p-6 border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-yellow-500 text-lg">★★★★★</span>
+            <span className="font-semibold">4.9/5</span>
+          </div>
+
+          <p className="text-slate-600">
+            Trusted by over 1,200+ customers across Bangladesh.
+          </p>
+        </div>
+
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="lg:sticky lg:top-24 self-start">
+
+        <div className="space-y-8">
+
+          {/* Product Details */}
+          <div>
+
+            <div className="inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold mb-4">
+              {product.category}
+            </div>
+
+            <h1 className="text-4xl lg:text-3xl font-black tracking-tight leading-tight">
+              {product.name}
+            </h1>
+
+            <div className="flex items-center gap-4 mt-5">
+              <span className="text-4xl font-black">
+                ৳ {product.suggestedRetailPrice}
+              </span>
+
+              <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold">
+                Free Delivery
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-6">
+
+              <div className="px-4 py-2 rounded-full bg-slate-100 text-sm">
+                ⭐ 4.9 Rating
               </div>
-              
-              <div className="space-y-4 relative z-10">
+
+              <div className="px-4 py-2 rounded-full bg-slate-100 text-sm">
+                🔥 1200+ Orders
+              </div>
+
+              <div className="px-4 py-2 rounded-full bg-slate-100 text-sm">
+                🚚 24h Dispatch
+              </div>
+
+            </div>
+
+            <p className="mt-6 text-slate-600 leading-relaxed text-lg">
+              {product.description}
+            </p>
+
+          </div>
+
+          {/* Checkout Card */}
+          <form
+            onSubmit={handleSubmit}
+            className="relative overflow-hidden rounded-[32px] border border-white/20 bg-white/90 backdrop-blur-xl p-8 shadow-[0_20px_60px_rgba(15,23,42,0.15)]"
+          >
+
+            <div className="absolute top-0 right-0 w-56 h-56 bg-blue-50 rounded-full blur-3xl opacity-70" />
+
+            <div className="relative z-10">
+
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold">
+                  Express Checkout
+                </h2>
+
+                <p className="text-slate-500 mt-2">
+                  No advance payment required.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name</label>
-                  <input 
-                    type="text" 
+                  <label className="block mb-2 font-medium">
+                    Full Name
+                  </label>
+
+                  <input
+                    type="text"
                     required
                     value={form.customerName}
-                    onChange={e => setForm({...form, customerName: e.target.value})}
-                    className="w-full border-slate-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400 bg-slate-50/50"
-                    placeholder="e.g. John Doe"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        customerName: e.target.value,
+                      })
+                    }
+                    className="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none"
+                    placeholder="Your Full Name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone Number</label>
+                  <label className="block mb-2 font-medium">
+                    Phone Number
+                  </label>
+
                   <div className="flex">
-                    <span className="inline-flex items-center px-4 py-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-600 font-bold sm:text-sm shadow-sm">
-                      +880
-                    </span>
-                    <input 
-                      type="tel" 
+                    <div className="h-14 px-5 flex items-center rounded-l-2xl border border-r-0 border-slate-200 bg-slate-100 font-semibold">
+                      +88
+                    </div>
+
+                    <input
+                      type="tel"
                       required
                       value={form.customerPhone}
-                      onChange={e => setForm({...form, customerPhone: e.target.value})}
-                      className="flex-1 w-full border-slate-200 rounded-r-xl px-4 py-3.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all placeholder:text-slate-400 bg-slate-50/50"
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          customerPhone: e.target.value,
+                        })
+                      }
+                      className="flex-1 h-14 px-5 rounded-r-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none"
                       placeholder="1XXXXXXXXX"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Detailed Delivery Address</label>
-                  <textarea 
+                  <label className="block mb-2 font-medium">
+                    Delivery Address
+                  </label>
+
+                  <textarea
+                    rows={4}
                     required
-                    rows={3}
                     value={form.address}
-                    onChange={e => setForm({...form, address: e.target.value})}
-                    className="w-full border-slate-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border outline-none transition-all resize-none placeholder:text-slate-400 bg-slate-50/50"
-                    placeholder="Building, Street, Area, City"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        address: e.target.value,
+                      })
+                    }
+                    className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 resize-none focus:border-blue-500 outline-none"
+                    placeholder="House, Road, Area, District"
                   />
                 </div>
+
               </div>
 
-              {error && <div className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100 relative z-10">{error}</div>}
+              {error && (
+                <div className="mt-4 bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl">
+                  {error}
+                </div>
+              )}
 
-              <button 
-                type="submit" 
-                disabled={submitting}
-                className="relative z-10 w-full bg-slate-900 hover:bg-black text-white px-4 py-4 rounded-xl font-bold text-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50 mt-6 shadow-xl shadow-slate-900/10"
-              >
-                {submitting ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  "Confirm Order — Cash on Delivery"
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      </main>
+              <div className="mt-8 rounded-2xl bg-slate-50 p-5 border border-slate-200">
+
+                <div className="flex justify-between">
+                  <span>Product Price</span>
+                  <span>৳ {product.suggestedRetailPrice}</span>
+                </div>
+
+                 <div className="flex justify-between items-center mt-3">
+      <span>Delivery</span>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setDeliveryLocation('inside')}
+          className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${
+            deliveryLocation === 'inside'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Inside Dhaka (60)
+        </button>
+        <button
+          onClick={() => setDeliveryLocation('outside')}
+          className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${
+            deliveryLocation === 'outside'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Outside Dhaka (120)
+        </button>
+      </div>
     </div>
+
+    {/* Optional: Show delivery fee separately */}
+    <div className="flex justify-between mt-2 text-sm text-gray-600">
+      <span>Delivery Fee</span>
+      <span>৳ {getDeliveryFee()}</span>
+    </div>
+
+    {/* Total with delivery included */}
+    <div className="border-t mt-4 pt-4 flex justify-between font-bold text-lg">
+      <span>Total</span>
+      <span>৳ {totalPrice}</span>
+    </div>
+  </div> 
+
+
+  
+  </div>
+
+          
+
+              
+
+              <p className="text-center text-sm text-slate-500 mt-4">
+                ✓ Cash On Delivery Available
+                <br />
+                ✓ No Advance Payment Required
+              </p>
+
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
   );
 }
